@@ -25,6 +25,11 @@ $this->title = 'ตั้งค่าระบบ';
             <?= $form->field($model, 'promptpay_id')->textInput(['inputmode' => 'numeric', 'autocomplete' => 'off'])
                 ->hint('เบอร์มือถือ 10 หลัก หรือเลขประจำตัวผู้เสียภาษี 13 หลักของหน่วยงาน') ?>
             <?= $form->field($model, 'promptpay_name')->hint('ควรตรงกับชื่อที่แอปธนาคารแสดงตอนสแกน เพื่อให้ผู้โอนมั่นใจ') ?>
+            <?php $stats = \app\models\SiteStats::get(); ?>
+            <?= $form->field($model, 'stats_min_events', ['template' => "{label}\n<div class=\"input-group\" style=\"max-width:220px\">{input}<span class=\"input-group-text\">งาน</span></div>\n{hint}\n{error}"])
+                ->input('number', ['min' => 0])
+                ->hint('นับจากข้อมูลจริง ตอนนี้: ' . number_format($stats['events']) . ' งาน · ' . number_format($stats['organizers']) . ' ผู้จัดงาน · '
+                    . number_format($stats['tickets']) . ' ที่นั่งที่ขายแล้ว · ' . number_format($stats['venues']) . ' สถานที่ — ใส่ 0 เพื่อไม่แสดง') ?>
             <h2 class="h6 mt-4">ผู้จัดงาน</h2>
             <?= $form->field($model, 'organizer_terms')->textarea(['rows' => 12, 'class' => 'form-control small'])
                 ->hint('ผู้สมัครเป็นผู้จัดงานต้องอ่านและยอมรับข้อความนี้ ระบบเก็บสำเนาฉบับที่แต่ละคนยอมรับไว้ในใบสมัคร · '

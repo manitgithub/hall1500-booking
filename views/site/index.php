@@ -1,5 +1,6 @@
 <?php
 /** @var app\models\Event[] $events */
+/** @var array|null $stats สถิติจริง (null = ยังไม่ถึงขั้นต่ำที่ตั้งไว้) */
 
 use app\models\Event;
 use yii\helpers\Html;
@@ -44,13 +45,28 @@ $f = Yii::$app->formatter;
 </div>
 
 <section class="promo mt-5 rounded-4 shadow-sm overflow-hidden">
+    <?php if ($stats): ?>
+        <div class="promo-stats row g-0 text-center">
+            <?php foreach ([
+                ['events', 'bi-calendar-event', 'งานที่จัดผ่านระบบ'],
+                ['tickets', 'bi-ticket-perforated', 'ที่นั่งที่จองและชำระแล้ว'],
+                ['organizers', 'bi-people', 'ผู้จัดงาน'],
+                ['venues', 'bi-building', 'สถานที่'],
+            ] as [$k, $icon, $label]): if (!$stats[$k]) continue; ?>
+                <div class="col">
+                    <div class="promo-stat-num"><i class="bi <?= $icon ?>"></i> <?= number_format($stats[$k]) ?></div>
+                    <div class="small opacity-75"><?= $label ?></div>
+                </div>
+            <?php endforeach ?>
+        </div>
+    <?php endif ?>
     <div class="row g-0">
         <div class="col-lg-7 p-4 p-md-5 align-self-center">
             <span class="badge promo-badge mb-3"><i class="bi bi-gift"></i> ใช้งานฟรี</span>
-            <h2 class="h3 fw-bold mb-2">อยากมีระบบจองที่นั่งแบบนี้ให้สถานที่ของคุณ?</h2>
+            <h2 class="h3 fw-bold mb-2">อยากเปิดขายบัตรงานของคุณเองไหม?</h2>
             <p class="mb-4 opacity-75">
-                ระบบจองที่นั่งออนไลน์สำหรับหอประชุม โรงละคร ห้องประชุม และงานสัมมนา รองรับหลายสถานที่ สร้างผังที่นั่งได้เองในหน้าเว็บ
-                เปิดให้หน่วยงานและสถานศึกษาใช้งานฟรี สนใจติดต่อผู้พัฒนาได้เลย
+                คอนเสิร์ต ละคร สัมมนา หรืองานในหอประชุม ห้องประชุม และโรงละคร — สร้างงาน ตั้งราคาตามโซน
+                แล้วให้ผู้ชมเลือกที่นั่งและจองออนไลน์ได้เลย สมัครเป็นผู้จัดงานได้ฟรี
             </p>
             <a href="<?= Url::to(['/organizer/apply']) ?>" class="btn btn-warning btn-lg fw-semibold me-2 mb-2">
                 <i class="bi bi-calendar-plus"></i> สมัครเป็นผู้จัดงาน
@@ -58,15 +74,15 @@ $f = Yii::$app->formatter;
             <a href="https://manitgithub.github.io/" target="_blank" rel="noopener" class="btn btn-outline-light btn-lg mb-2">
                 <i class="bi bi-chat-dots"></i> ติดต่อผู้พัฒนา
             </a>
-            <div class="small mt-2 opacity-75">มานิต จิตต์ประไพย</div>
+            <div class="small mt-2 opacity-75">พัฒนาโดย มานิต จิตต์ประไพย</div>
         </div>
         <div class="col-lg-5 p-4 p-md-5 promo-features d-flex align-items-center">
             <ul class="list-unstyled mb-0">
-                <li><i class="bi bi-line"></i> เข้าสู่ระบบด้วย LINE ไม่ต้องสมัครสมาชิก</li>
-                <li><i class="bi bi-grid-3x3-gap"></i> ผังที่นั่งแบบโต้ตอบ แยกโซนราคา ใช้บนมือถือได้</li>
-                <li><i class="bi bi-qr-code"></i> ชำระผ่าน QR PromptPay แนบสลิป หรือบัตรเครดิต</li>
-                <li><i class="bi bi-ticket-perforated"></i> E-ticket พร้อม QR สแกนเช็คอินหน้างาน</li>
-                <li><i class="bi bi-speedometer2"></i> หลังบ้านจัดการการแสดง ตรวจสลิป ส่งออกรายงาน</li>
+                <li><i class="bi bi-gift"></i> <span><b>ฟรี</b> ไม่มีค่าธรรมเนียมจากระบบ</span></li>
+                <li><i class="bi bi-wallet2"></i> <span><b>เงินเข้าบัญชีคุณโดยตรง</b> ผ่าน QR PromptPay ไม่ผ่านตัวกลาง</span></li>
+                <li><i class="bi bi-lightning-charge"></i> <span><b>ตั้งงานได้ในไม่กี่นาที</b> เลือกสถานที่ ตั้งราคาโซน เปิดขาย</span></li>
+                <li><i class="bi bi-grid-3x3-gap"></i> <span><b>ผู้ชมเลือกที่นั่งเอง</b> บนผังจริง ใช้บนมือถือได้ เข้าระบบด้วย LINE</span></li>
+                <li><i class="bi bi-qr-code-scan"></i> <span><b>ทีมงานสแกนตั๋วด้วยมือถือ</b> เชิญเข้าทีมด้วยลิงก์เดียว</span></li>
             </ul>
         </div>
     </div>

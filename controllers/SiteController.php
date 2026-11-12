@@ -4,6 +4,7 @@ namespace app\controllers;
 
 use app\models\Event;
 use app\models\Setting;
+use app\models\SiteStats;
 use Yii;
 use yii\filters\VerbFilter;
 use yii\web\Controller;
@@ -28,7 +29,8 @@ class SiteController extends Controller
             ->andWhere(['>', 'show_start', date('Y-m-d H:i:s', strtotime('-1 day'))])
             ->orderBy(['show_start' => SORT_ASC])
             ->all();
-        return $this->render('index', ['events' => $events]);
+        $stats = SiteStats::get();
+        return $this->render('index', ['events' => $events, 'stats' => SiteStats::shouldShow($stats) ? $stats : null]);
     }
 
     /** เงื่อนไขการใช้งานสำหรับผู้จัดงาน */

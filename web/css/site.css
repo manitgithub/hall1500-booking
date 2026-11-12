@@ -62,3 +62,9 @@ body { background: #f6f5fa; font-family: "Sarabun", "Noto Sans Thai", system-ui,
 .promo-features { background: rgba(255, 255, 255, .08); }
 .promo-features li { display: flex; gap: .6rem; padding: .45rem 0; }
 .promo-features .bi { color: var(--brand-2); font-size: 1.15rem; }
+
+.promo-stats { background: rgba(0, 0, 0, .18); padding: 1rem .5rem; }
+.promo-stats .col { min-width: 50%; padding: .5rem; }
+@media (min-width: 768px) { .promo-stats .col { min-width: 0; } }
+.promo-stat-num { font-size: 1.6rem; font-weight: 700; color: var(--brand-2); line-height: 1.2; }
+.promo-stat-num .bi { font-size: 1.1rem; opacity: .85; }

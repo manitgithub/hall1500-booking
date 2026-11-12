@@ -15,6 +15,7 @@ class Setting
     const PROMPTPAY_NAME = 'promptpay_name';
     const SITE_NAME = 'site_name';
     const ORGANIZER_TERMS = 'organizer_terms';
+    const STATS_MIN_EVENTS = 'stats_min_events';
 
     private static ?array $cache = null;
 
@@ -24,6 +25,7 @@ class Setting
         $pp = Yii::$app->params['payment'];
         return [
             self::SITE_NAME => (string)Yii::$app->params['appName'],
+            self::STATS_MIN_EVENTS => '10',
             self::ORGANIZER_TERMS => (string)file_get_contents(Yii::getAlias('@app/config/organizer-terms.txt')),
             self::PROMPTPAY_ID => (string)($pp['promptpayId'] ?? ''),
             self::PROMPTPAY_NAME => (string)($pp['promptpayName'] ?? ''),
@@ -61,6 +63,12 @@ class Setting
         } catch (\Throwable $e) {
             return (string)Yii::$app->params['appName']; // ยังไม่ได้ migrate
         }
+    }
+
+    /** แสดงสถิติการใช้งานจริงในหน้าแรกเมื่อมีงานอย่างน้อยเท่านี้ (0 = ไม่แสดง) */
+    public static function statsMinEvents(): int
+    {
+        return max(0, (int)self::get(self::STATS_MIN_EVENTS));
     }
 
     /** เงื่อนไขสำหรับผู้จัดงาน (แก้ได้ที่ หลังบ้าน → ตั้งค่าระบบ) */
