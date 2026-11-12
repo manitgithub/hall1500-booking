@@ -22,6 +22,8 @@ use yii\db\Expression;
  * @property string $status
  * @property int $max_seats_per_booking
  * @property int $hold_minutes
+ * @property string|null $promptpay_id   ว่าง = ใช้ค่ากลาง
+ * @property string|null $promptpay_name
  *
  * @property EventZonePrice[] $zonePrices
  * @property Venue $venue
@@ -75,6 +77,14 @@ class Event extends ActiveRecord
                 'when' => fn() => $this->sale_end, 'message' => 'วันปิดขายต้องไม่เกินเวลาเริ่มแสดง'],
             [['max_seats_per_booking'], 'integer', 'min' => 1, 'max' => 50],
             [['hold_minutes'], 'integer', 'min' => 5, 'max' => 120],
+            [['promptpay_id', 'promptpay_name'], 'trim'],
+            [['promptpay_id'], 'filter', 'filter' => fn($v) => ($v = preg_replace('/\D/', '', (string)$v)) === '' ? null : $v],
+            [['promptpay_id'], 'match', 'pattern' => '/^(0\d{9}|\d{13}|\d{15})$/',
+                'message' => 'ต้องเป็นเบอร์มือถือ 10 หลัก, เลขประจำตัวผู้เสียภาษี 13 หลัก หรือ e-Wallet ID 15 หลัก'],
+            [['promptpay_name'], 'string', 'max' => 255],
+            [['promptpay_name'], 'default', 'value' => null],
+            [['promptpay_name'], 'required', 'when' => fn() => (bool)$this->promptpay_id,
+                'message' => 'ใส่ชื่อบัญชีของหมายเลขนี้ด้วย เพื่อให้ผู้โอนตรวจสอบได้'],
             [['posterFile'], 'image', 'extensions' => 'jpg, jpeg, png, webp', 'maxSize' => 3 * 1024 * 1024, 'skipOnEmpty' => true],
         ];
     }
@@ -86,6 +96,22 @@ class Event extends ActiveRecord
             && Booking::find()->where(['event_id' => $this->id])->exists()) {
             $this->addError($attr, 'มีการจองแล้ว ไม่สามารถเปลี่ยนสถานที่ได้');
         }
+    }
+
+    /** หมายเลข PromptPay ที่ใช้รับเงินของงานนี้ (ไม่ได้ตั้ง = ค่ากลางของระบบ) */
+    public function payPromptpayId(): string
+    {
+        return $this->promptpay_id ?: Setting::promptpayId();
+    }
+
+    public function payPromptpayName(): string
+    {
+        return $this->promptpay_id ? (string)$this->promptpay_name : Setting::promptpayName();
+    }
+
+    public function hasOwnPromptpay(): bool
+    {
+        return (bool)$this->promptpay_id;
     }
 
     public function getVenue()
@@ -110,6 +136,7 @@ class Event extends ActiveRecord
             'poster' => 'โปสเตอร์', 'posterFile' => 'โปสเตอร์', 'organizer' => 'ผู้จัด',
             'show_start' => 'เริ่มแสดง', 'show_end' => 'สิ้นสุด',
             'sale_start' => 'เปิดขาย', 'sale_end' => 'ปิดขาย', 'status' => 'สถานะ',
+            'promptpay_id' => 'หมายเลข PromptPay ของงานนี้', 'promptpay_name' => 'ชื่อบัญชี',
             'max_seats_per_booking' => 'จองได้สูงสุด (ที่/ครั้ง)', 'hold_minutes' => 'เวลาล็อกที่นั่ง (นาที)',
         ];
     }

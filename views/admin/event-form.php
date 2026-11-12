@@ -5,6 +5,7 @@
 
 use app\models\Event;
 use app\models\Hall;
+use app\models\Setting;
 use app\models\Venue;
 use yii\helpers\Json;
 use yii\helpers\Html;
@@ -72,6 +73,14 @@ if ($event->venue_id && !isset($venueOptions[$event->venue_id]) && $event->venue
                 <?php endforeach ?>
             </table>
             <div class="small text-muted">เปลี่ยนราคาภายหลังจะมีผลกับที่นั่งที่ยังว่างเท่านั้น</div>
+        </div></div>
+        <div class="card border-0 shadow-sm mt-3"><div class="card-body">
+            <h2 class="h6"><i class="bi bi-qr-code"></i> บัญชีรับเงินของงานนี้</h2>
+            <?= $form->field($event, 'promptpay_id')->textInput([
+                'inputmode' => 'numeric', 'autocomplete' => 'off', 'placeholder' => 'ค่ากลาง: ' . Setting::promptpayId(),
+            ])->hint('ว่าง = ใช้บัญชีกลางจาก <a href="' . \yii\helpers\Url::to(['settings']) . '">ตั้งค่าระบบ</a>') ?>
+            <?= $form->field($event, 'promptpay_name')->textInput(['placeholder' => 'ค่ากลาง: ' . Setting::promptpayName()])
+                ->hint('ชื่อที่ผู้โอนเห็นในหน้าชำระเงิน ควรตรงกับชื่อที่แอปธนาคารแสดง') ?>
         </div></div>
         <div class="d-grid mt-3"><button class="btn btn-primary btn-lg">บันทึก</button></div>
         <?php if (!$event->isNewRecord): ?>

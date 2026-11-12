@@ -160,6 +160,9 @@ class SeedController extends Controller
                 'sale_start' => $d('-3 days 09:00'), 'sale_end' => $d('+10 days 12:00'),
                 'status' => Event::STATUS_PUBLISHED,
                 'max_seats_per_booking' => 6,
+                // งานนี้รับเงินเข้าบัญชีของผู้จัดเอง (งานอื่นใช้บัญชีกลาง)
+                'promptpay_id' => '0812345678',
+                'promptpay_name' => 'ชุมนุมศิลปะการแสดง',
                 'prices' => ['VIP' => 400, 'A' => 250, 'B' => 150, 'C' => 100],
             ],
             'seminar' => [

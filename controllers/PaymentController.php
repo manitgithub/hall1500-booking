@@ -3,7 +3,6 @@
 namespace app\controllers;
 
 use app\components\PromptPay;
-use app\models\Setting;
 use app\components\QrImage;
 use app\models\Booking;
 use app\models\Payment;
@@ -46,7 +45,7 @@ class PaymentController extends Controller
     public function actionPromptpayQr($code)
     {
         $b = $this->findOwnBooking($code);
-        $id = Setting::promptpayId();
+        $id = $b->event->payPromptpayId();
         if (!$id || !$b->isPayable()) {
             throw new NotFoundHttpException();
         }

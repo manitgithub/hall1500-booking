@@ -29,6 +29,7 @@ $f = Yii::$app->formatter;
                 <div class="d-flex justify-content-between"><b><?= $b->code ?></b><?= Booking::statusBadge($b->status) ?></div>
                 <div><?= Html::encode($b->user->display_name) ?></div>
                 <div class="text-muted"><?= Html::encode($b->event->title) ?></div>
+                <div class="small text-muted">โอนเข้า <?= Html::encode($b->event->payPromptpayName()) ?> · <?= Html::encode($b->event->payPromptpayId()) ?></div>
                 <div>ที่นั่ง: <?= Html::encode($b->seatLabels()) ?></div>
                 <div class="mt-1">ยอดที่ต้องได้รับ <b class="fs-6 text-primary"><?= $f->asDecimal($p->amount, 2) ?></b> บาท</div>
                 <div>เวลาโอน (ผู้ใช้แจ้ง): <?= $f->asDatetime($p->transferred_at) ?></div>

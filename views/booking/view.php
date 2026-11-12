@@ -6,14 +6,13 @@
 
 use app\models\Booking;
 use app\models\Payment;
-use app\models\Setting;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\widgets\ActiveForm;
 
 $this->title = 'รายการจอง ' . $b->code;
 $f = Yii::$app->formatter;
-$pp = ['promptpayId' => Setting::promptpayId(), 'promptpayName' => Setting::promptpayName()];
+$pp = ['promptpayId' => $b->event->payPromptpayId(), 'promptpayName' => $b->event->payPromptpayName()];
 $last = $b->latestPayment;
 ?>
 <div class="row g-4">
