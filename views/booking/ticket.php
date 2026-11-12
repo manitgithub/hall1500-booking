@@ -31,7 +31,7 @@ $f = Yii::$app->formatter;
             <div class="alert alert-success py-2 small">เช็คอินแล้ว <?= $f->asDatetime($b->checked_in_at) ?></div>
         <?php endif ?>
         <img src="<?= Url::to(['/booking/qr', 'code' => $b->code]) ?>" alt="QR ตั๋ว" class="img-fluid" style="max-width:260px">
-        <div class="small text-muted">แสดง QR นี้ที่จุดตรวจบัตรหน้าห้องประชุม<br>1 QR ใช้เข้าได้ทั้งกลุ่ม (<?= $b->seat_count ?> ที่นั่ง)</div>
+        <div class="small text-muted">แสดง QR นี้ที่จุดตรวจบัตรหน้างาน<br>1 QR ใช้เข้าได้ทั้งกลุ่ม (<?= $b->seat_count ?> ที่นั่ง)</div>
     </div>
 </div>
 <div class="text-center mt-3 no-print">
