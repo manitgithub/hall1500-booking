@@ -1,0 +1,45 @@
+<?php
+/** @var yii\web\View $this */
+/** @var app\models\PaymentSettingsForm $model */
+
+use app\components\PromptPay;
+use app\components\QrImage;
+use yii\helpers\Html;
+use yii\widgets\ActiveForm;
+
+$this->title = 'ตั้งค่า PromptPay';
+?>
+<h1 class="h4 mb-3"><?= $this->title ?></h1>
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm"><div class="card-body">
+            <?php $form = ActiveForm::begin([
+                'fieldConfig' => [
+                    'options' => ['class' => 'mb-3'], 'labelOptions' => ['class' => 'form-label'],
+                    'inputOptions' => ['class' => 'form-control'], 'errorOptions' => ['class' => 'invalid-feedback d-block'],
+                ],
+            ]) ?>
+            <?= $form->field($model, 'promptpay_id')->textInput(['inputmode' => 'numeric', 'autocomplete' => 'off'])
+                ->hint('เบอร์มือถือ 10 หลัก หรือเลขประจำตัวผู้เสียภาษี 13 หลักของหน่วยงาน') ?>
+            <?= $form->field($model, 'promptpay_name')->hint('ควรตรงกับชื่อที่แอปธนาคารแสดงตอนสแกน เพื่อให้ผู้โอนมั่นใจ') ?>
+            <button class="btn btn-primary"><i class="bi bi-save"></i> บันทึก</button>
+            <?php ActiveForm::end() ?>
+        </div></div>
+        <p class="small text-muted mt-2">
+            การเปลี่ยนหมายเลขมีผลกับ QR ที่สร้างหลังจากนี้ทันที ผู้ที่เปิดหน้าชำระเงินค้างไว้ควรรีเฟรชหน้าก่อนโอน
+        </p>
+    </div>
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm"><div class="card-body text-center">
+            <div class="small text-muted mb-2">ตัวอย่าง QR (ไม่ระบุยอดเงิน)</div>
+            <?php try {
+                $png = QrImage::png(PromptPay::payload((string)$model->promptpay_id), 220);
+                echo Html::img('data:image/png;base64,' . base64_encode($png), ['class' => 'img-fluid border rounded', 'alt' => 'PromptPay QR']);
+            } catch (\InvalidArgumentException $e) {
+                echo '<div class="text-muted py-5">ยังไม่ได้ตั้งหมายเลข PromptPay</div>';
+            } ?>
+            <div class="fw-bold mt-2"><?= Html::encode($model->promptpay_name) ?></div>
+            <div class="text-muted"><?= Html::encode($model->promptpay_id) ?></div>
+        </div></div>
+    </div>
+</div>

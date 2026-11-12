@@ -7,6 +7,7 @@ use app\models\Event;
 use app\models\EventZonePrice;
 use app\models\Hall;
 use app\models\Payment;
+use app\models\PaymentSettingsForm;
 use app\models\User;
 use Yii;
 use yii\base\UserException;
@@ -258,6 +259,19 @@ class AdminController extends Controller
             Yii::$app->session->setFlash('success', "เปลี่ยนสิทธิ์ {$u->display_name} เป็น $role แล้ว");
         }
         return $this->redirect(['users']);
+    }
+
+    // -------------------------------------------------------------- settings
+
+    /** ตั้งค่าการรับชำระเงิน (PromptPay) */
+    public function actionSettings()
+    {
+        $model = new PaymentSettingsForm();
+        if ($model->load(Yii::$app->request->post()) && $model->save(Yii::$app->user->id)) {
+            Yii::$app->session->setFlash('success', 'บันทึกการตั้งค่า PromptPay แล้ว');
+            return $this->refresh();
+        }
+        return $this->render('settings', ['model' => $model]);
     }
 
     // --------------------------------------------------------------- helpers

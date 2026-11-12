@@ -46,6 +46,7 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/boot
                             <li><a class="dropdown-item" href="<?= Url::to(['/admin/payments']) ?>">ตรวจสลิป</a></li>
                             <li><a class="dropdown-item" href="<?= Url::to(['/admin/bookings']) ?>">รายการจอง</a></li>
                             <li><a class="dropdown-item" href="<?= Url::to(['/admin/users']) ?>">ผู้ใช้</a></li>
+                            <li><a class="dropdown-item" href="<?= Url::to(['/admin/settings']) ?>">ตั้งค่า PromptPay</a></li>
                         </ul>
                     </li>
                 <?php endif ?>

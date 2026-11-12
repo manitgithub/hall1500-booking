@@ -7,6 +7,7 @@ use app\models\Event;
 use app\models\EventZonePrice;
 use app\models\Hall;
 use app\models\Payment;
+use app\models\Setting;
 use app\models\User;
 use Yii;
 use yii\console\Controller;
@@ -46,6 +47,7 @@ class SeedController extends Controller
         }
 
         $users = $this->seedUsers();
+        $this->seedSettings($users['Udevadmin']);
         $events = $this->seedEvents();
         $this->seedBookings($events, $users);
 
@@ -95,6 +97,14 @@ class SeedController extends Controller
         }
         $this->stdout('ผู้ใช้: ' . count($users) . "\n");
         return $users;
+    }
+
+    /** ค่าตั้งค่า PromptPay (แก้ต่อได้ที่ หลังบ้าน → ตั้งค่า PromptPay) */
+    private function seedSettings(User $admin): void
+    {
+        Setting::set(Setting::PROMPTPAY_ID, '0931464976', $admin->id);
+        Setting::set(Setting::PROMPTPAY_NAME, Setting::promptpayName() ?: 'ห้องประชุม 1500', $admin->id);
+        $this->stdout('PromptPay: ' . Setting::promptpayId() . ' (' . Setting::promptpayName() . ")\n");
     }
 
     /** @return Event[] keyed by slug */
