@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "hall1500",
+      "runtimeExecutable": "/opt/homebrew/opt/php@8.3/bin/php",
+      "runtimeArgs": ["-S", "localhost:8080", "-t", "web"],
+      "port": 8080
+    }
+  ]
+}
