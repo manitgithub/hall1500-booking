@@ -38,7 +38,10 @@ $seatCount = (new \yii\db\Query())->select(['zone_code', 'c' => 'COUNT(*)'])->fr
                 <div class="col-md-6"><?= $form->field($event, 'max_seats_per_booking')->input('number') ?></div>
                 <div class="col-md-6"><?= $form->field($event, 'hold_minutes')->input('number') ?></div>
             </div>
-            <?= $form->field($event, 'posterFile')->fileInput(['accept' => 'image/*']) ?>
+            <?= $form->field($event, 'posterFile')->fileInput(['accept' => 'image/jpeg,image/png,image/webp', 'id' => 'poster-file'])
+                ->hint('ขนาดแนะนำ <b>1200 × 1600 px</b> (แนวตั้ง 3:4) · อย่างน้อย 600 × 800 px · ไฟล์ JPG, PNG หรือ WEBP ไม่เกิน 3 MB<br>'
+                    . 'หน้าแรกแสดงโปสเตอร์ในกรอบ 3:4 ถ้าสัดส่วนต่างจากนี้ ขอบบน-ล่างหรือซ้าย-ขวาจะถูกตัด'
+                    . '<span id="poster-dim" class="d-block mt-1"></span>') ?>
             <?php if ($event->posterUrl): ?><img src="<?= Html::encode($event->posterUrl) ?>" height="120" class="rounded mb-3" alt=""><?php endif ?>
             <?= $form->field($event, 'status')->dropDownList(Event::statusLabels(), ['class' => 'form-select'])
                 ->hint('เลือก "เปิดขาย" แล้วบันทึก ระบบจะสร้างรายการที่นั่งตามราคาโซนให้อัตโนมัติ') ?>
@@ -72,3 +75,29 @@ $seatCount = (new \yii\db\Query())->select(['zone_code', 'c' => 'COUNT(*)'])->fr
     </div>
 </div>
 <?php ActiveForm::end() ?>
+<?php $this->registerJs(<<<'JS'
+document.getElementById('poster-file')?.addEventListener('change', function () {
+    const out = document.getElementById('poster-dim');
+    out.textContent = '';
+    out.className = 'd-block mt-1';
+    const f = this.files[0];
+    if (!f) return;
+    const img = new Image();
+    img.onload = function () {
+        const w = img.naturalWidth, h = img.naturalHeight, ratio = w / h;
+        let msg = 'ไฟล์ที่เลือก: ' + w + ' × ' + h + ' px', cls = 'text-success';
+        if (w < 600 || h < 800) {
+            msg += ' — เล็กกว่าที่แนะนำ อาจไม่คมชัด'; cls = 'text-danger';
+        } else if (Math.abs(ratio - 0.75) > 0.03) {
+            msg += ' — สัดส่วนไม่ใช่ 3:4 บางส่วนจะถูกตัด'; cls = 'text-warning';
+        }
+        if (f.size > 3 * 1024 * 1024) {
+            msg += ' — ไฟล์ใหญ่เกิน 3 MB'; cls = 'text-danger';
+        }
+        out.textContent = msg;
+        out.classList.add(cls, 'fw-semibold');
+        URL.revokeObjectURL(img.src);
+    };
+    img.src = URL.createObjectURL(f);
+});
+JS); ?>
