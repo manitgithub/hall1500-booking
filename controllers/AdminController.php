@@ -9,6 +9,7 @@ use app\models\Hall;
 use app\models\Payment;
 use app\models\PaymentSettingsForm;
 use app\models\User;
+use app\models\Venue;
 use Yii;
 use yii\base\UserException;
 use yii\data\ActiveDataProvider;
@@ -33,7 +34,7 @@ class AdminController extends Controller
             ]]],
             'verbs' => ['class' => VerbFilter::class, 'actions' => [
                 'block' => ['post'], 'payment-approve' => ['post'], 'payment-reject' => ['post'],
-                'booking-cancel' => ['post'], 'user-role' => ['post'], 'sync-seats' => ['post'],
+                'booking-cancel' => ['post'], 'user-role' => ['post'], 'sync-seats' => ['post'], 'venue-generate' => ['post'],
             ]],
         ];
     }
@@ -52,7 +53,12 @@ class AdminController extends Controller
 
     public function actionEventCreate()
     {
+        if (!Venue::options()) {
+            Yii::$app->session->setFlash('warning', 'กรุณาเพิ่มสถานที่ก่อนสร้างการแสดง');
+            return $this->redirect(['venue-create']);
+        }
         $event = new Event([
+            'venue_id' => (int)Yii::$app->request->get('venue_id') ?: array_key_first(Venue::options()),
             'status' => Event::STATUS_DRAFT,
             'category' => 'concert',
             'max_seats_per_booking' => Yii::$app->params['booking']['maxSeatsPerBooking'],
@@ -109,7 +115,7 @@ class AdminController extends Controller
                 return $this->redirect(['event-update', 'id' => $event->id]);
             }
         }
-        return $this->render('event-form', ['event' => $event, 'prices' => $prices]);
+        return $this->render('event-form', ['event' => $event, 'prices' => $prices, 'venueSeatCounts' => $this->venueSeatCounts()]);
     }
 
     /** @return EventZonePrice[] indexed by zone code */
@@ -261,14 +267,98 @@ class AdminController extends Controller
         return $this->redirect(['users']);
     }
 
+    /** [venue_id => [zone => จำนวนที่นั่ง]] สำหรับแสดงในฟอร์มการแสดง */
+    private function venueSeatCounts(): array
+    {
+        $rows = (new \yii\db\Query())->select(['venue_id', 'zone_code', 'c' => 'COUNT(*)'])->from('{{%seat}}')
+            ->where(['is_active' => 1])->groupBy(['venue_id', 'zone_code'])->all();
+        $out = [];
+        foreach ($rows as $r) {
+            $out[$r['venue_id']][$r['zone_code']] = (int)$r['c'];
+        }
+        return $out;
+    }
+
+    // ---------------------------------------------------------------- venues
+
+    public function actionVenues()
+    {
+        $venues = Venue::find()->orderBy(['is_active' => SORT_DESC, 'name' => SORT_ASC])->all();
+        $eventCounts = Event::find()->select(['c' => 'COUNT(*)', 'venue_id'])->groupBy('venue_id')->indexBy('venue_id')->column();
+        return $this->render('venues', ['venues' => $venues, 'eventCounts' => $eventCounts]);
+    }
+
+    public function actionVenueCreate()
+    {
+        return $this->saveVenue(new Venue(['layout' => Venue::LAYOUT_GRID, 'is_active' => true]));
+    }
+
+    public function actionVenueUpdate($id)
+    {
+        return $this->saveVenue($this->findVenue($id));
+    }
+
+    private function saveVenue(Venue $venue)
+    {
+        if ($venue->load(Yii::$app->request->post()) && $venue->validate()) {
+            $layoutChanged = $venue->isNewRecord || $venue->isAttributeChanged('layout') || $venue->isAttributeChanged('settings')
+                || $venue->isGrid();
+            $venue->save(false);
+            if ($layoutChanged) {
+                $n = $venue->generateSeats();
+                Yii::$app->session->setFlash('success', "บันทึกสถานที่แล้ว — ผังมี $n ที่นั่ง"
+                    . ($venue->hasSales() ? ' (มีการจองแล้ว: ที่นั่งเดิมถูกอัปเดต ไม่ลบประวัติ)' : ''));
+            } else {
+                Yii::$app->session->setFlash('success', 'บันทึกสถานที่แล้ว');
+            }
+            return $this->redirect(['venue-update', 'id' => $venue->id]);
+        }
+        return $this->render('venue-form', ['venue' => $venue]);
+    }
+
+    /** สร้างที่นั่งใหม่จากผัง (เช่น หลังแก้ไฟล์ config/venues/*.php) */
+    public function actionVenueGenerate($id)
+    {
+        $venue = $this->findVenue($id);
+        $n = $venue->generateSeats();
+        Yii::$app->session->setFlash('success', "สร้างผังที่นั่งแล้ว $n ที่นั่ง — การแสดงที่เปิดขายอยู่ให้กด 'อัปเดตรายการที่นั่ง'");
+        return $this->redirect(['venue-update', 'id' => $id]);
+    }
+
+    /** ข้อมูลผังสำหรับดูตัวอย่าง (seatmap.js) */
+    public function actionVenueSeats($id)
+    {
+        $venue = $this->findVenue($id);
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $rows = (new \yii\db\Query())->from('{{%seat}}')->where(['venue_id' => $venue->id, 'is_active' => 1])
+            ->orderBy(['floor' => SORT_ASC, 'row_index' => SORT_ASC, 'pos_x' => SORT_ASC])->all();
+        $zones = [];
+        foreach (Hall::zones() as $code => $z) {
+            $zones[$code] = ['label' => $z['label'], 'color' => $z['color']];
+        }
+        return [
+            'seats' => array_map(fn($r) => [
+                'id' => (int)$r['id'], 'f' => (int)$r['floor'], 'r' => $r['row_label'], 'n' => (int)$r['seat_number'],
+                'l' => $r['label'], 'z' => $r['zone_code'], 'x' => (float)$r['pos_x'], 'y' => (float)$r['pos_y'],
+                'w' => (bool)$r['is_wheelchair'], 's' => 'available', 'p' => null,
+            ], $rows),
+            'zones' => $zones, 'floors' => $venue->floorLabels(), 'seatSize' => $venue->seatSize(),
+        ];
+    }
+
+    private function findVenue($id): Venue
+    {
+        return Venue::findOne((int)$id) ?? throw new NotFoundHttpException();
+    }
+
     // -------------------------------------------------------------- settings
 
-    /** ตั้งค่าการรับชำระเงิน (PromptPay) */
+    /** ตั้งค่าระบบ: ชื่อระบบ และ PromptPay */
     public function actionSettings()
     {
         $model = new PaymentSettingsForm();
         if ($model->load(Yii::$app->request->post()) && $model->save(Yii::$app->user->id)) {
-            Yii::$app->session->setFlash('success', 'บันทึกการตั้งค่า PromptPay แล้ว');
+            Yii::$app->session->setFlash('success', 'บันทึกการตั้งค่าแล้ว');
             return $this->refresh();
         }
         return $this->render('settings', ['model' => $model]);

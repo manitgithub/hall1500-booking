@@ -1,6 +1,6 @@
 /**
- * ผังที่นั่งห้องประชุม 1500 (SVG)
- *   new SeatMap(el, { url, mode: 'user'|'admin', max, onChange(selected), holders })
+ * ผังที่นั่ง (SVG)
+ *   new SeatMap(el, { url, mode: 'user'|'admin'|'preview', max, onChange(selected), holders })
  */
 (function (global) {
   'use strict';
@@ -60,6 +60,7 @@
     }
 
     isSelectable(s) {
+      if (this.opts.mode === 'preview') return false;
       if (this.opts.mode === 'admin') return s.s === 'available' || s.s === 'blocked';
       return s.s === 'available' || s.s === 'mine';
     }

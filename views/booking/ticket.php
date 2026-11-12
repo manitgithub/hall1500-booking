@@ -1,7 +1,6 @@
 <?php
 /** @var app\models\Booking $b */
 
-use app\models\Hall;
 use yii\helpers\Html;
 use yii\helpers\Url;
 
@@ -10,7 +9,7 @@ $f = Yii::$app->formatter;
 ?>
 <div class="ticket">
     <div class="ticket-head">
-        <div class="small opacity-75">ห้องประชุม 1500</div>
+        <div class="small opacity-75"><?= Html::encode($b->event->venue->name) ?></div>
         <div class="fs-5 fw-bold"><?= Html::encode($b->event->title) ?></div>
         <div><i class="bi bi-calendar-event"></i> <?= $f->asDatetime($b->event->show_start) ?></div>
     </div>
@@ -22,7 +21,7 @@ $f = Yii::$app->formatter;
         <div class="mt-3">
             <div class="small text-muted">ที่นั่ง (<?= $b->seat_count ?>)</div>
             <?php foreach ($b->seats as $s): ?>
-                <span class="seat-chip"><?= Html::encode(Hall::floorLabel($s->floor)) ?> <?= Html::encode($s->label) ?></span>
+                <span class="seat-chip"><?= Html::encode($s->fullLabel) ?></span>
             <?php endforeach ?>
         </div>
     </div>

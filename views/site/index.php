@@ -5,13 +5,13 @@ use app\models\Event;
 use yii\helpers\Html;
 use yii\helpers\Url;
 
-$this->title = 'การแสดงที่ห้องประชุม 1500';
+$this->title = 'การแสดงที่เปิดจอง';
 $f = Yii::$app->formatter;
 ?>
 <div class="d-flex align-items-end justify-content-between mb-4">
     <div>
         <h1 class="h3 mb-1">การแสดงที่กำลังจะมาถึง</h1>
-        <div class="text-muted">คอนเสิร์ต ละครสั้น และกิจกรรม ณ ห้องประชุม 1500 ที่นั่ง</div>
+        <div class="text-muted">คอนเสิร์ต ละคร สัมมนา และกิจกรรม เลือกที่นั่งและจองออนไลน์ได้ทันที</div>
     </div>
 </div>
 
@@ -32,6 +32,7 @@ $f = Yii::$app->formatter;
                     <div class="small text-muted mb-1"><?= Html::encode(Event::categories()[$e->category] ?? '') ?></div>
                     <h2 class="h6 card-title fw-bold"><?= Html::encode($e->title) ?></h2>
                     <div class="small"><i class="bi bi-calendar-event"></i> <?= $f->asDatetime($e->show_start) ?></div>
+                    <div class="small"><i class="bi bi-geo-alt"></i> <?= Html::encode($e->venue->name) ?></div>
                     <div class="small"><i class="bi bi-cash"></i> <?= $e->priceRange() ?></div>
                 </div>
                 <div class="card-footer bg-white border-0 pb-3">
@@ -46,9 +47,9 @@ $f = Yii::$app->formatter;
     <div class="row g-0">
         <div class="col-lg-7 p-4 p-md-5 align-self-center">
             <span class="badge promo-badge mb-3"><i class="bi bi-gift"></i> ใช้งานฟรี</span>
-            <h2 class="h3 fw-bold mb-2">อยากมีระบบจองที่นั่งแบบนี้ให้หอประชุมของคุณ?</h2>
+            <h2 class="h3 fw-bold mb-2">อยากมีระบบจองที่นั่งแบบนี้ให้สถานที่ของคุณ?</h2>
             <p class="mb-4 opacity-75">
-                ระบบจองที่นั่งออนไลน์สำหรับหอประชุม โรงละคร และงานสัมมนา ปรับผังที่นั่งให้ตรงกับห้องจริงได้
+                ระบบจองที่นั่งออนไลน์สำหรับหอประชุม โรงละคร ห้องประชุม และงานสัมมนา รองรับหลายสถานที่ สร้างผังที่นั่งได้เองในหน้าเว็บ
                 เปิดให้หน่วยงานและสถานศึกษาใช้งานฟรี สนใจติดต่อผู้พัฒนาได้เลย
             </p>
             <a href="https://manitgithub.github.io/" target="_blank" rel="noopener" class="btn btn-warning btn-lg fw-semibold">

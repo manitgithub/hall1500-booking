@@ -29,7 +29,7 @@ $last = $b->latestPayment;
                 </div>
                 <hr>
                 <div class="fw-bold"><?= Html::encode($b->event->title) ?></div>
-                <div class="small text-muted mb-2"><?= $f->asDatetime($b->event->show_start) ?> · ห้องประชุม 1500</div>
+                <div class="small text-muted mb-2"><?= $f->asDatetime($b->event->show_start) ?> · <?= Html::encode($b->event->venue->name) ?></div>
                 <table class="table table-sm small mb-2">
                     <?php foreach ($b->bookingSeats as $bs): ?>
                         <tr><td><?= Html::encode($bs->seat->fullLabel) ?> <span class="text-muted">(<?= Html::encode(\app\models\Hall::zoneLabel($bs->seat->zone_code)) ?>)</span></td>
@@ -106,8 +106,9 @@ $last = $b->latestPayment;
                 $this->registerJsFile('https://cdn.omise.co/omise.js');
                 $pk = Html::encode(Yii::$app->omise->publicKey);
                 $amt = (int)round($b->total_amount * 100);
+                $frameLabel = \yii\helpers\Json::htmlEncode(Yii::$app->name);
                 $this->registerJs(<<<JS
-OmiseCard.configure({ publicKey: '$pk', currency: 'THB', frameLabel: 'Hall 1500', submitLabel: 'ชำระเงิน', locale: 'th' });
+OmiseCard.configure({ publicKey: '$pk', currency: 'THB', frameLabel: $frameLabel, submitLabel: 'ชำระเงิน', locale: 'th' });
 document.getElementById('cardBtn').addEventListener('click', function () {
   OmiseCard.open({ amount: $amt, defaultPaymentMethod: 'credit_card', onCreateTokenSuccess: function (t) {
     document.getElementById('omiseToken').value = t; document.getElementById('cardForm').submit();

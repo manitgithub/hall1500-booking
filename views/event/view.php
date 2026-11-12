@@ -19,7 +19,7 @@ $canBook = $event->isOnSale();
         <div class="text-muted">
             <i class="bi bi-calendar-event"></i> <?= $f->asDatetime($event->show_start) ?>
             <?php if ($event->show_end): ?> – <?= $f->asTime($event->show_end, 'php:H:i') ?><?php endif ?>
-            &nbsp;·&nbsp; <i class="bi bi-geo-alt"></i> ห้องประชุม 1500
+            &nbsp;·&nbsp; <i class="bi bi-geo-alt"></i> <?= Html::encode($event->venue->name) ?><?php if ($event->venue->location): ?> <span class="small">(<?= Html::encode($event->venue->location) ?>)</span><?php endif ?>
             <?php if ($event->organizer): ?>&nbsp;·&nbsp; <?= Html::encode($event->organizer) ?><?php endif ?>
         </div>
         <?php if ($event->description): ?>

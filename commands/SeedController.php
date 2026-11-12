@@ -9,6 +9,7 @@ use app\models\Hall;
 use app\models\Payment;
 use app\models\Setting;
 use app\models\User;
+use app\models\Venue;
 use Yii;
 use yii\console\Controller;
 use yii\console\ExitCode;
@@ -17,7 +18,7 @@ use yii\db\Query;
 /**
  * ใส่ข้อมูลตัวอย่างสำหรับทดลองบนเครื่อง (ห้ามใช้บน production)
  *   php yii seed            ใส่ข้อมูล (ข้ามถ้ามีการแสดงอยู่แล้ว)
- *   php yii seed --fresh    ลบผู้ใช้ทดสอบ/การแสดง/การจองทั้งหมดแล้วใส่ใหม่
+ *   php yii seed --fresh    ลบผู้ใช้ทดสอบ/สถานที่/การแสดง/การจองทั้งหมดแล้วใส่ใหม่
  */
 class SeedController extends Controller
 {
@@ -35,10 +36,6 @@ class SeedController extends Controller
             $this->stderr("ปฏิเสธ: YII_ENV=prod\n");
             return ExitCode::NOPERM;
         }
-        if (!(new Query())->from('{{%seat}}')->exists()) {
-            $this->stderr("ยังไม่มีที่นั่ง — รัน php yii hall/generate ก่อน\n");
-            return ExitCode::DATAERR;
-        }
         if ($this->fresh) {
             $this->wipe();
         } elseif (Event::find()->exists()) {
@@ -48,7 +45,8 @@ class SeedController extends Controller
 
         $users = $this->seedUsers();
         $this->seedSettings($users['Udevadmin']);
-        $events = $this->seedEvents();
+        $venues = $this->seedVenues();
+        $events = $this->seedEvents($venues);
         $this->seedBookings($events, $users);
 
         $this->stdout("\nเสร็จแล้ว: " . count($users) . " ผู้ใช้, " . count($events) . " การแสดง, "
@@ -60,7 +58,7 @@ class SeedController extends Controller
     {
         $db = Yii::$app->db;
         $db->createCommand('SET FOREIGN_KEY_CHECKS=0')->execute();
-        foreach (['payment', 'booking_seat', 'event_seat', 'booking', 'event_zone_price', 'event'] as $t) {
+        foreach (['payment', 'booking_seat', 'event_seat', 'booking', 'event_zone_price', 'event', 'seat', 'venue'] as $t) {
             $db->createCommand()->truncateTable("{{%$t}}")->execute();
         }
         $db->createCommand('SET FOREIGN_KEY_CHECKS=1')->execute();
@@ -103,16 +101,46 @@ class SeedController extends Controller
     private function seedSettings(User $admin): void
     {
         Setting::set(Setting::PROMPTPAY_ID, '0931464976', $admin->id);
-        Setting::set(Setting::PROMPTPAY_NAME, Setting::promptpayName() ?: 'ห้องประชุม 1500', $admin->id);
+        Setting::set(Setting::PROMPTPAY_NAME, Setting::promptpayName() ?: Setting::siteName(), $admin->id);
         $this->stdout('PromptPay: ' . Setting::promptpayId() . ' (' . Setting::promptpayName() . ")\n");
     }
 
-    /** @return Event[] keyed by slug */
-    private function seedEvents(): array
+    /** @return Venue[] keyed by slug */
+    private function seedVenues(): array
+    {
+        $defs = [
+            'hall1500' => ['name' => 'ห้องประชุม 1500', 'location' => 'อาคารไทยบุรี มหาวิทยาลัยวลัยลักษณ์',
+                'description' => 'ผังจริง 7 โซน 1,425 ที่นั่ง', 'layout' => 'hall1500'],
+            'theatre' => ['name' => 'โรงละครเล็ก', 'location' => 'ศูนย์ศิลปวัฒนธรรม ชั้น 2', 'layout' => Venue::LAYOUT_GRID,
+                'grid_rows' => 12, 'grid_sections' => '6,14,6', 'grid_zone_vip' => 2, 'grid_zone_a' => 4, 'grid_zone_b' => 3],
+            'seminar' => ['name' => 'ห้องสัมมนา 2', 'location' => 'อาคารเรียนรวม ชั้น 3', 'layout' => Venue::LAYOUT_GRID,
+                'grid_rows' => 10, 'grid_sections' => '10,10', 'grid_zone_vip' => 0, 'grid_zone_a' => 5, 'grid_zone_b' => 5],
+        ];
+        $venues = [];
+        foreach ($defs as $key => $def) {
+            $v = Venue::findOne(['name' => $def['name']]) ?? new Venue();
+            Yii::configure($v, $def);
+            $v->is_active = true;
+            if (!$v->save()) {
+                throw new \RuntimeException("$key: " . json_encode($v->errors, JSON_UNESCAPED_UNICODE));
+            }
+            $n = $v->generateSeats();
+            $this->stdout(sprintf("สถานที่ #%d %-30s %5d ที่นั่ง\n", $v->id, $v->name, $n));
+            $venues[$key] = $v;
+        }
+        return $venues;
+    }
+
+    /**
+     * @param Venue[] $venues
+     * @return Event[] keyed by slug
+     */
+    private function seedEvents(array $venues): array
     {
         $d = fn(string $rel) => date('Y-m-d H:i:00', strtotime($rel));
         $defs = [
             'concert' => [
+                'venue_id' => $venues['hall1500']->id,
                 'title' => 'คอนเสิร์ตการกุศล "เสียงเพลงแห่งมิตรภาพ"',
                 'category' => 'concert',
                 'organizer' => 'ชมรมดนตรีสากล',
@@ -123,6 +151,7 @@ class SeedController extends Controller
                 'prices' => ['VIP' => 800, 'A' => 500, 'B' => 300, 'C' => 200],
             ],
             'drama' => [
+                'venue_id' => $venues['theatre']->id,
                 'title' => 'ละครเวที "บ้านริมคลอง"',
                 'category' => 'drama',
                 'organizer' => 'ชุมนุมศิลปะการแสดง',
@@ -134,6 +163,7 @@ class SeedController extends Controller
                 'prices' => ['VIP' => 400, 'A' => 250, 'B' => 150, 'C' => 100],
             ],
             'seminar' => [
+                'venue_id' => $venues['seminar']->id,
                 'title' => 'สัมมนา "AI กับการเรียนรู้ยุคใหม่"',
                 'category' => 'seminar',
                 'organizer' => 'สำนักวิชาสารสนเทศศาสตร์',
@@ -144,6 +174,7 @@ class SeedController extends Controller
                 'prices' => ['A' => 0, 'B' => 0, 'C' => 0],
             ],
             'draft' => [
+                'venue_id' => $venues['theatre']->id,
                 'title' => 'ละครสั้นปีใหม่ (ร่าง)',
                 'category' => 'drama',
                 'organizer' => 'สโมสรนักศึกษา',

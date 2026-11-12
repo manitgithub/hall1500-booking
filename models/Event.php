@@ -9,6 +9,7 @@ use yii\db\Expression;
 /**
  * รอบการแสดง (ละครสั้น / คอนเสิร์ต ฯลฯ)
  * @property int $id
+ * @property int $venue_id
  * @property string $title
  * @property string|null $category
  * @property string|null $description
@@ -23,6 +24,7 @@ use yii\db\Expression;
  * @property int $hold_minutes
  *
  * @property EventZonePrice[] $zonePrices
+ * @property Venue $venue
  */
 class Event extends ActiveRecord
 {
@@ -59,7 +61,10 @@ class Event extends ActiveRecord
     public function rules()
     {
         return [
-            [['title', 'show_start', 'status'], 'required'],
+            [['title', 'show_start', 'status', 'venue_id'], 'required'],
+            [['venue_id'], 'integer'],
+            [['venue_id'], 'exist', 'targetClass' => Venue::class, 'targetAttribute' => 'id'],
+            [['venue_id'], 'validateVenueChange'],
             [['title', 'organizer'], 'string', 'max' => 255],
             [['description'], 'string'],
             [['category'], 'in', 'range' => array_keys(self::categories())],
@@ -72,6 +77,20 @@ class Event extends ActiveRecord
             [['hold_minutes'], 'integer', 'min' => 5, 'max' => 120],
             [['posterFile'], 'image', 'extensions' => 'jpg, jpeg, png, webp', 'maxSize' => 3 * 1024 * 1024, 'skipOnEmpty' => true],
         ];
+    }
+
+    /** ห้ามย้ายสถานที่เมื่อมีการจองแล้ว (ที่นั่งเดิมผูกกับผังของสถานที่เดิม) */
+    public function validateVenueChange($attr)
+    {
+        if (!$this->isNewRecord && $this->isAttributeChanged($attr, false)
+            && Booking::find()->where(['event_id' => $this->id])->exists()) {
+            $this->addError($attr, 'มีการจองแล้ว ไม่สามารถเปลี่ยนสถานที่ได้');
+        }
+    }
+
+    public function getVenue()
+    {
+        return $this->hasOne(Venue::class, ['id' => 'venue_id']);
     }
 
     /** รับค่าจาก <input type="datetime-local"> */
@@ -87,7 +106,7 @@ class Event extends ActiveRecord
     public function attributeLabels()
     {
         return [
-            'title' => 'ชื่อการแสดง', 'category' => 'ประเภท', 'description' => 'รายละเอียด',
+            'title' => 'ชื่อการแสดง', 'venue_id' => 'สถานที่จัด', 'category' => 'ประเภท', 'description' => 'รายละเอียด',
             'poster' => 'โปสเตอร์', 'posterFile' => 'โปสเตอร์', 'organizer' => 'ผู้จัด',
             'show_start' => 'เริ่มแสดง', 'show_end' => 'สิ้นสุด',
             'sale_start' => 'เปิดขาย', 'sale_end' => 'ปิดขาย', 'status' => 'สถานะ',
@@ -175,16 +194,17 @@ class Event extends ActiveRecord
                 SELECT :e, s.id, 'available', p.price
                 FROM {{%seat}} s
                 JOIN {{%event_zone_price}} p ON p.zone_code = s.zone_code AND p.event_id = :e AND p.is_open = 1
-                WHERE s.is_active = 1
+                WHERE s.is_active = 1 AND s.venue_id = :v
                 ON DUPLICATE KEY UPDATE {{%event_seat}}.price = IF({{%event_seat}}.status = 'available', VALUES(price), {{%event_seat}}.price)
-            ", [':e' => $this->id])->execute();
+            ", [':e' => $this->id, ':v' => $this->venue_id])->execute();
 
             $db->createCommand("
                 DELETE es FROM {{%event_seat}} es
                 JOIN {{%seat}} s ON s.id = es.seat_id
                 LEFT JOIN {{%event_zone_price}} p ON p.zone_code = s.zone_code AND p.event_id = es.event_id AND p.is_open = 1
-                WHERE es.event_id = :e AND es.status IN ('available','blocked') AND (p.zone_code IS NULL OR s.is_active = 0)
-            ", [':e' => $this->id])->execute();
+                WHERE es.event_id = :e AND es.status IN ('available','blocked')
+                  AND (p.zone_code IS NULL OR s.is_active = 0 OR s.venue_id <> :v)
+            ", [':e' => $this->id, ':v' => $this->venue_id])->execute();
             $tx->commit();
         } catch (\Throwable $e) {
             $tx->rollBack();
@@ -203,7 +223,7 @@ class Event extends ActiveRecord
             ->from(['s' => '{{%seat}}'])
             ->leftJoin(['es' => '{{%event_seat}}'], 'es.seat_id = s.id AND es.event_id = :e', [':e' => $this->id])
             ->leftJoin(['b' => '{{%booking}}'], 'b.id = es.booking_id')
-            ->where(['s.is_active' => 1])
+            ->where(['s.is_active' => 1, 's.venue_id' => $this->venue_id])
             ->orderBy(['s.floor' => SORT_ASC, 's.row_index' => SORT_ASC, 's.pos_x' => SORT_ASC])
             ->all();
 
@@ -231,10 +251,6 @@ class Event extends ActiveRecord
         foreach (Hall::zones() as $code => $z) {
             $zones[$code] = ['label' => $z['label'], 'color' => $z['color']];
         }
-        $floors = [];
-        foreach (Hall::config()['floors'] as $no => $f) {
-            $floors[$no] = $f['label'];
-        }
-        return ['seats' => $seats, 'zones' => $zones, 'floors' => $floors, 'seatSize' => Hall::config()['seatSize']];
+        return ['seats' => $seats, 'zones' => $zones, 'floors' => $this->venue->floorLabels(), 'seatSize' => $this->venue->seatSize()];
     }
 }

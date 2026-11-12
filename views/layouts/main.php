@@ -27,7 +27,7 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/boot
 <?php $this->beginBody() ?>
 <nav class="navbar navbar-expand-lg navbar-dark bg-brand">
     <div class="container">
-        <a class="navbar-brand" href="<?= Url::home() ?>"><i class="bi bi-ticket-perforated"></i> Hall 1500</a>
+        <a class="navbar-brand" href="<?= Url::home() ?>"><i class="bi bi-ticket-perforated"></i> <?= Html::encode(Yii::$app->name) ?></a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav"><span class="navbar-toggler-icon"></span></button>
         <div class="collapse navbar-collapse" id="nav">
             <ul class="navbar-nav me-auto">
@@ -43,10 +43,11 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/boot
                         <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">หลังบ้าน</a>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="<?= Url::to(['/admin/index']) ?>">ภาพรวม / การแสดง</a></li>
+                            <li><a class="dropdown-item" href="<?= Url::to(['/admin/venues']) ?>">สถานที่ / ผังที่นั่ง</a></li>
                             <li><a class="dropdown-item" href="<?= Url::to(['/admin/payments']) ?>">ตรวจสลิป</a></li>
                             <li><a class="dropdown-item" href="<?= Url::to(['/admin/bookings']) ?>">รายการจอง</a></li>
                             <li><a class="dropdown-item" href="<?= Url::to(['/admin/users']) ?>">ผู้ใช้</a></li>
-                            <li><a class="dropdown-item" href="<?= Url::to(['/admin/settings']) ?>">ตั้งค่า PromptPay</a></li>
+                            <li><a class="dropdown-item" href="<?= Url::to(['/admin/settings']) ?>">ตั้งค่าระบบ</a></li>
                         </ul>
                     </li>
                 <?php endif ?>
@@ -84,7 +85,7 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/boot
 </main>
 
 <footer class="py-3 text-center text-muted small border-top bg-white">
-    ระบบจองที่นั่ง ห้องประชุม 1500 · &copy; <?= date('Y') + 543 ?>
+    <?= Html::encode(Yii::$app->name) ?> · &copy; <?= date('Y') + 543 ?>
     · พัฒนาโดย <a href="https://manitgithub.github.io/" target="_blank" rel="noopener" class="text-decoration-none">มานิต จิตต์ประไพย</a>
 </footer>
 <?php $this->endBody() ?>

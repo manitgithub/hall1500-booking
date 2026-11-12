@@ -7,6 +7,7 @@ use yii\db\ActiveRecord;
 /**
  * ที่นั่งทางกายภาพ
  * @property int $id
+ * @property int $venue_id
  * @property int $floor
  * @property string $section
  * @property string $row_label
@@ -26,9 +27,14 @@ class Seat extends ActiveRecord
         return '{{%seat}}';
     }
 
-    /** ป้ายแสดงผลแบบเต็ม เช่น "ชั้นล่าง F12" */
+    public function getVenue()
+    {
+        return $this->hasOne(Venue::class, ['id' => 'venue_id']);
+    }
+
+    /** ป้ายแสดงผลแบบเต็ม เช่น "ด้านหน้า (แถว A–O) F12" หรือ "F12" ถ้าสถานที่มีชั้นเดียว */
     public function getFullLabel(): string
     {
-        return Hall::floorLabel($this->floor) . ' ' . $this->label;
+        return trim($this->venue->floorLabel($this->floor) . ' ' . $this->label);
     }
 }

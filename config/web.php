@@ -5,6 +5,10 @@ $db = require __DIR__ . '/db.php';
 $config = [
     'id' => 'hall1500',
     'name' => $params['appName'],
+    // ชื่อระบบที่แอดมินตั้งไว้ในหลังบ้าน
+    'on beforeRequest' => function () {
+        Yii::$app->name = \app\models\Setting::siteName();
+    },
     'basePath' => dirname(__DIR__),
     'language' => 'th-TH',
     'timeZone' => 'Asia/Bangkok',

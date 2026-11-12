@@ -1,6 +1,6 @@
 <?php
 return [
-    'appName' => 'ระบบจองที่นั่ง ห้องประชุม 1500',
+    'appName' => 'ระบบจองที่นั่งออนไลน์', // ค่าเริ่มต้น แก้ได้ที่ หลังบ้าน → ตั้งค่าระบบ
     'appUrl' => rtrim(env('APP_URL', 'http://localhost:8080'), '/'),
     'devLogin' => (bool)env('DEV_LOGIN', false),
 

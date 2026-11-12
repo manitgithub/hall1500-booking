@@ -13,6 +13,7 @@ class Setting
 {
     const PROMPTPAY_ID = 'promptpay_id';
     const PROMPTPAY_NAME = 'promptpay_name';
+    const SITE_NAME = 'site_name';
 
     private static ?array $cache = null;
 
@@ -21,6 +22,7 @@ class Setting
     {
         $pp = Yii::$app->params['payment'];
         return [
+            self::SITE_NAME => (string)Yii::$app->params['appName'],
             self::PROMPTPAY_ID => (string)($pp['promptpayId'] ?? ''),
             self::PROMPTPAY_NAME => (string)($pp['promptpayName'] ?? ''),
         ];
@@ -48,6 +50,15 @@ class Setting
     public static function promptpayId(): string
     {
         return preg_replace('/\D/', '', (string)self::get(self::PROMPTPAY_ID));
+    }
+
+    public static function siteName(): string
+    {
+        try {
+            return (string)self::get(self::SITE_NAME);
+        } catch (\Throwable $e) {
+            return (string)Yii::$app->params['appName']; // ยังไม่ได้ migrate
+        }
     }
 
     public static function promptpayName(): string

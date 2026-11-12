@@ -7,7 +7,7 @@ use app\components\QrImage;
 use yii\helpers\Html;
 use yii\widgets\ActiveForm;
 
-$this->title = 'ตั้งค่า PromptPay';
+$this->title = 'ตั้งค่าระบบ';
 ?>
 <h1 class="h4 mb-3"><?= $this->title ?></h1>
 <div class="row g-4">
@@ -19,6 +19,8 @@ $this->title = 'ตั้งค่า PromptPay';
                     'inputOptions' => ['class' => 'form-control'], 'errorOptions' => ['class' => 'invalid-feedback d-block'],
                 ],
             ]) ?>
+            <?= $form->field($model, 'site_name')->hint('แสดงที่แถบเมนู ชื่อแท็บเบราว์เซอร์ และท้ายหน้า เช่น "ระบบจองที่นั่ง หอประชุมเทศบาล"') ?>
+            <h2 class="h6 mt-4">รับชำระเงิน PromptPay</h2>
             <?= $form->field($model, 'promptpay_id')->textInput(['inputmode' => 'numeric', 'autocomplete' => 'off'])
                 ->hint('เบอร์มือถือ 10 หลัก หรือเลขประจำตัวผู้เสียภาษี 13 หลักของหน่วยงาน') ?>
             <?= $form->field($model, 'promptpay_name')->hint('ควรตรงกับชื่อที่แอปธนาคารแสดงตอนสแกน เพื่อให้ผู้โอนมั่นใจ') ?>

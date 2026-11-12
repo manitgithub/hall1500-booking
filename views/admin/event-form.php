@@ -1,17 +1,23 @@
 <?php
 /** @var app\models\Event $event */
 /** @var app\models\EventZonePrice[] $prices */
+/** @var array $venueSeatCounts [venue_id => [zone => count]] */
 
 use app\models\Event;
 use app\models\Hall;
+use app\models\Venue;
+use yii\helpers\Json;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\widgets\ActiveForm;
 
 $this->title = $event->isNewRecord ? 'เพิ่มการแสดง' : 'แก้ไข: ' . $event->title;
 $dt = fn($v) => $v ? date('Y-m-d\TH:i', strtotime($v)) : '';
-$seatCount = (new \yii\db\Query())->select(['zone_code', 'c' => 'COUNT(*)'])->from('{{%seat}}')
-    ->where(['is_active' => 1])->groupBy('zone_code')->indexBy('zone_code')->column();
+$seatCount = $venueSeatCounts[$event->venue_id] ?? [];
+$venueOptions = Venue::options();
+if ($event->venue_id && !isset($venueOptions[$event->venue_id]) && $event->venue) {
+    $venueOptions[$event->venue_id] = $event->venue->name . ' (ปิดใช้งาน)';
+}
 ?>
 <h1 class="h4 mb-3"><?= Html::encode($this->title) ?></h1>
 <?php $form = ActiveForm::begin([
@@ -25,6 +31,8 @@ $seatCount = (new \yii\db\Query())->select(['zone_code', 'c' => 'COUNT(*)'])->fr
     <div class="col-lg-7">
         <div class="card border-0 shadow-sm"><div class="card-body">
             <?= $form->field($event, 'title') ?>
+            <?= $form->field($event, 'venue_id')->dropDownList($venueOptions, ['class' => 'form-select', 'id' => 'venue-id'])
+                ->hint('ผังที่นั่งและจำนวนที่นั่งตามสถานที่ที่เลือก · <a href="' . \yii\helpers\Url::to(['venues']) . '">จัดการสถานที่</a>') ?>
             <div class="row">
                 <div class="col-md-6"><?= $form->field($event, 'category')->dropDownList(Event::categories(), ['class' => 'form-select']) ?></div>
                 <div class="col-md-6"><?= $form->field($event, 'organizer') ?></div>
@@ -55,7 +63,7 @@ $seatCount = (new \yii\db\Query())->select(['zone_code', 'c' => 'COUNT(*)'])->fr
                 <?php foreach ($prices as $code => $zp): $z = Hall::zones()[$code]; ?>
                     <tr>
                         <td><span class="d-inline-block rounded-circle me-1" style="width:12px;height:12px;background:<?= $z['color'] ?>"></span><?= Html::encode($z['label']) ?></td>
-                        <td class="text-end"><?= (int)($seatCount[$code] ?? 0) ?></td>
+                        <td class="text-end" data-zone-count="<?= Html::encode($code) ?>"><?= (int)($seatCount[$code] ?? 0) ?></td>
                         <td>
                             <?= Html::textInput("ZonePrice[$code][price]", $zp->price, ['class' => 'form-control form-control-sm' . ($zp->hasErrors() ? ' is-invalid' : ''), 'type' => 'number', 'step' => '0.01', 'min' => 0]) ?>
                         </td>
@@ -99,5 +107,11 @@ document.getElementById('poster-file')?.addEventListener('change', function () {
         URL.revokeObjectURL(img.src);
     };
     img.src = URL.createObjectURL(f);
+});
+JS); ?>
+<?php $this->registerJs('const venueSeatCounts = ' . Json::htmlEncode((object)$venueSeatCounts) . ";\n" . <<<'JS'
+document.getElementById('venue-id')?.addEventListener('change', function () {
+    const counts = venueSeatCounts[this.value] || {};
+    document.querySelectorAll('[data-zone-count]').forEach(td => { td.textContent = counts[td.dataset.zoneCount] || 0; });
 });
 JS); ?>

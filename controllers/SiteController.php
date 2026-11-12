@@ -22,7 +22,7 @@ class SiteController extends Controller
     public function actionIndex()
     {
         $events = Event::find()
-            ->with('zonePrices')
+            ->with(['zonePrices', 'venue'])
             ->where(['status' => [Event::STATUS_PUBLISHED, Event::STATUS_CLOSED]])
             ->andWhere(['>', 'show_start', date('Y-m-d H:i:s', strtotime('-1 day'))])
             ->orderBy(['show_start' => SORT_ASC])
