@@ -1,0 +1,36 @@
+{
+    "name": "wu/hall1500-booking",
+    "description": "ระบบจองที่นั่งหอประชุม 1500 ที่นั่ง (Yii2 + MySQL + LINE Login)",
+    "type": "project",
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "มานิต จิตต์ประไพย",
+            "homepage": "https://manitgithub.github.io/",
+            "role": "Developer"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "php": ">=8.1",
+        "yiisoft/yii2": "~2.0.51",
+        "endroid/qr-code": "^5.0"
+    },
+    "replace": {
+        "bower-asset/jquery": "*",
+        "bower-asset/inputmask": "*",
+        "bower-asset/punycode": "*",
+        "bower-asset/yii2-pjax": "*"
+    },
+    "config": {
+        "process-timeout": 1800,
+        "allow-plugins": {
+            "yiisoft/yii2-composer": true
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "app\\": ""
+        }
+    }
+}

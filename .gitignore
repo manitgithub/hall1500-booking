@@ -1,0 +1,7 @@
+/vendor
+/runtime/*
+!/runtime/.gitkeep
+/web/assets/*
+/web/uploads/slips/*
+/web/uploads/posters/*
+.env
