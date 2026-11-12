@@ -21,9 +21,14 @@ $this->title = 'ตั้งค่าระบบ';
             ]) ?>
             <?= $form->field($model, 'site_name')->hint('แสดงที่แถบเมนู ชื่อแท็บเบราว์เซอร์ และท้ายหน้า เช่น "ระบบจองที่นั่ง หอประชุมเทศบาล"') ?>
             <h2 class="h6 mt-4">รับชำระเงิน PromptPay</h2>
+            <div class="form-text mt-n2 mb-2">บัญชีกลาง ใช้กับงานของแอดมินที่ไม่ได้ตั้งบัญชีของงานไว้ (งานของผู้จัดงานต้องใช้บัญชีของผู้จัดเอง)</div>
             <?= $form->field($model, 'promptpay_id')->textInput(['inputmode' => 'numeric', 'autocomplete' => 'off'])
                 ->hint('เบอร์มือถือ 10 หลัก หรือเลขประจำตัวผู้เสียภาษี 13 หลักของหน่วยงาน') ?>
             <?= $form->field($model, 'promptpay_name')->hint('ควรตรงกับชื่อที่แอปธนาคารแสดงตอนสแกน เพื่อให้ผู้โอนมั่นใจ') ?>
+            <h2 class="h6 mt-4">ผู้จัดงาน</h2>
+            <?= $form->field($model, 'organizer_terms')->textarea(['rows' => 12, 'class' => 'form-control small'])
+                ->hint('ผู้สมัครเป็นผู้จัดงานต้องอ่านและยอมรับข้อความนี้ ระบบเก็บสำเนาฉบับที่แต่ละคนยอมรับไว้ในใบสมัคร · '
+                    . \yii\helpers\Html::a('ดูหน้าเงื่อนไข', ['/site/terms'], ['target' => '_blank'])) ?>
             <button class="btn btn-primary"><i class="bi bi-save"></i> บันทึก</button>
             <?php ActiveForm::end() ?>
         </div></div>

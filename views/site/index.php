@@ -52,7 +52,10 @@ $f = Yii::$app->formatter;
                 ระบบจองที่นั่งออนไลน์สำหรับหอประชุม โรงละคร ห้องประชุม และงานสัมมนา รองรับหลายสถานที่ สร้างผังที่นั่งได้เองในหน้าเว็บ
                 เปิดให้หน่วยงานและสถานศึกษาใช้งานฟรี สนใจติดต่อผู้พัฒนาได้เลย
             </p>
-            <a href="https://manitgithub.github.io/" target="_blank" rel="noopener" class="btn btn-warning btn-lg fw-semibold">
+            <a href="<?= Url::to(['/organizer/apply']) ?>" class="btn btn-warning btn-lg fw-semibold me-2 mb-2">
+                <i class="bi bi-calendar-plus"></i> สมัครเป็นผู้จัดงาน
+            </a>
+            <a href="https://manitgithub.github.io/" target="_blank" rel="noopener" class="btn btn-outline-light btn-lg mb-2">
                 <i class="bi bi-chat-dots"></i> ติดต่อผู้พัฒนา
             </a>
             <div class="small mt-2 opacity-75">มานิต จิตต์ประไพย</div>

@@ -20,7 +20,7 @@ $this->title = 'ผู้ใช้';
         ['attribute' => 'last_login_at', 'label' => 'เข้าใช้ล่าสุด', 'format' => 'datetime'],
         ['label' => 'สิทธิ์', 'format' => 'raw', 'value' => fn(User $u) =>
             Html::beginForm(['user-role', 'id' => $u->id], 'post', ['class' => 'd-flex gap-1'])
-            . Html::dropDownList('role', $u->role, ['user' => 'ผู้ใช้', 'staff' => 'เจ้าหน้าที่', 'admin' => 'แอดมิน'], ['class' => 'form-select form-select-sm'])
+            . Html::dropDownList('role', $u->role, User::roleLabels(), ['class' => 'form-select form-select-sm'])
             . Html::submitButton('บันทึก', ['class' => 'btn btn-sm btn-outline-primary'])
             . Html::endForm()],
     ],

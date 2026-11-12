@@ -14,6 +14,7 @@ class Setting
     const PROMPTPAY_ID = 'promptpay_id';
     const PROMPTPAY_NAME = 'promptpay_name';
     const SITE_NAME = 'site_name';
+    const ORGANIZER_TERMS = 'organizer_terms';
 
     private static ?array $cache = null;
 
@@ -23,6 +24,7 @@ class Setting
         $pp = Yii::$app->params['payment'];
         return [
             self::SITE_NAME => (string)Yii::$app->params['appName'],
+            self::ORGANIZER_TERMS => (string)file_get_contents(Yii::getAlias('@app/config/organizer-terms.txt')),
             self::PROMPTPAY_ID => (string)($pp['promptpayId'] ?? ''),
             self::PROMPTPAY_NAME => (string)($pp['promptpayName'] ?? ''),
         ];
@@ -59,6 +61,12 @@ class Setting
         } catch (\Throwable $e) {
             return (string)Yii::$app->params['appName']; // ยังไม่ได้ migrate
         }
+    }
+
+    /** เงื่อนไขสำหรับผู้จัดงาน (แก้ได้ที่ หลังบ้าน → ตั้งค่าระบบ) */
+    public static function organizerTerms(): string
+    {
+        return str_replace("\r\n", "\n", trim((string)self::get(self::ORGANIZER_TERMS)));
     }
 
     public static function promptpayName(): string

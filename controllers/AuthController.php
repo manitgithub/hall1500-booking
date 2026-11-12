@@ -38,7 +38,7 @@ class AuthController extends Controller
         if (!Yii::$app->params['devLogin']) {
             throw new NotFoundHttpException();
         }
-        $role = in_array($role, ['user', 'staff', 'admin'], true) ? $role : 'user';
+        $role = in_array($role, ['user', 'organizer', 'staff', 'admin'], true) ? $role : 'user';
         $user = User::upsertFromLine(['sub' => 'Udev' . $role, 'name' => "ทดสอบ ($role)"]);
         $user->updateAttributes(['role' => $role]);
         Yii::$app->user->login($user, 3600);

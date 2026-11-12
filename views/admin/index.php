@@ -2,17 +2,24 @@
 /** @var app\models\Event[] $events */
 /** @var array $revenue */
 /** @var int $pendingSlips */
+/** @var int $pendingOrganizers */
 
 use app\models\Event;
 use yii\helpers\Html;
 use yii\helpers\Url;
 
-$this->title = 'หลังบ้าน';
+$isAdmin = Yii::$app->user->identity->isAdmin();
+$this->title = $isAdmin ? 'หลังบ้าน' : 'งานของฉัน';
 $f = Yii::$app->formatter;
 ?>
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="h4 mb-0">การแสดงทั้งหมด</h1>
+    <h1 class="h4 mb-0"><?= $isAdmin ? 'การแสดงทั้งหมด' : 'งานของฉัน' ?></h1>
     <div>
+        <?php if ($pendingOrganizers): ?>
+            <a href="<?= Url::to(['organizers']) ?>" class="btn btn-outline-info">
+                ใบสมัครผู้จัดงาน <span class="badge bg-danger"><?= $pendingOrganizers ?></span>
+            </a>
+        <?php endif ?>
         <a href="<?= Url::to(['payments']) ?>" class="btn btn-outline-warning">
             ตรวจสลิป <?php if ($pendingSlips): ?><span class="badge bg-danger"><?= $pendingSlips ?></span><?php endif ?>
         </a>
@@ -25,7 +32,13 @@ $f = Yii::$app->formatter;
         <tbody>
         <?php foreach ($events as $e): $s = $e->seatSummary(); $rv = $revenue[$e->id] ?? null; ?>
             <tr>
-                <td><a href="<?= Url::to(['/event/view', 'id' => $e->id]) ?>" class="fw-bold"><?= Html::encode($e->title) ?></a></td>
+                <td>
+                    <a href="<?= Url::to(['/event/view', 'id' => $e->id]) ?>" class="fw-bold"><?= Html::encode($e->title) ?></a>
+                    <div class="small text-muted">
+                        <?= Html::encode($e->venue->name) ?>
+                        <?php if ($isAdmin && $e->owner): ?> · ผู้จัด: <?= Html::encode($e->owner->display_name) ?><?php endif ?>
+                    </div>
+                </td>
                 <td class="small"><?= $f->asDatetime($e->show_start) ?></td>
                 <td><span class="badge bg-<?= $e->status === Event::STATUS_PUBLISHED ? 'success' : 'secondary' ?>"><?= Event::statusLabels()[$e->status] ?></span></td>
                 <td class="text-end"><?= $s['sold'] ?><?php if ($s['held']): ?> <span class="text-muted small">(+<?= $s['held'] ?> ล็อก)</span><?php endif ?></td>

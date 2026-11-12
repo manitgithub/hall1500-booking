@@ -38,6 +38,19 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/boot
                 <?php if ($user && $user->isStaff()): ?>
                     <li class="nav-item"><a class="nav-link" href="<?= Url::to(['/checkin/index']) ?>"><i class="bi bi-qr-code-scan"></i> เช็คอิน</a></li>
                 <?php endif ?>
+                <?php if ($user && $user->isOrganizer()): ?>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">จัดงาน</a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="<?= Url::to(['/admin/index']) ?>">งานของฉัน</a></li>
+                            <li><a class="dropdown-item" href="<?= Url::to(['/admin/event-create']) ?>">สร้างงานใหม่</a></li>
+                            <li><a class="dropdown-item" href="<?= Url::to(['/admin/payments']) ?>">ตรวจสลิป</a></li>
+                            <li><a class="dropdown-item" href="<?= Url::to(['/admin/bookings']) ?>">รายการจอง</a></li>
+                        </ul>
+                    </li>
+                <?php elseif ($user && !$user->isAdmin()): ?>
+                    <li class="nav-item"><a class="nav-link" href="<?= Url::to(['/organizer/apply']) ?>">อยากจัดงาน?</a></li>
+                <?php endif ?>
                 <?php if ($user && $user->isAdmin()): ?>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">หลังบ้าน</a>
@@ -46,6 +59,7 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/boot
                             <li><a class="dropdown-item" href="<?= Url::to(['/admin/venues']) ?>">สถานที่ / ผังที่นั่ง</a></li>
                             <li><a class="dropdown-item" href="<?= Url::to(['/admin/payments']) ?>">ตรวจสลิป</a></li>
                             <li><a class="dropdown-item" href="<?= Url::to(['/admin/bookings']) ?>">รายการจอง</a></li>
+                            <li><a class="dropdown-item" href="<?= Url::to(['/admin/organizers']) ?>">ผู้จัดงาน</a></li>
                             <li><a class="dropdown-item" href="<?= Url::to(['/admin/users']) ?>">ผู้ใช้</a></li>
                             <li><a class="dropdown-item" href="<?= Url::to(['/admin/settings']) ?>">ตั้งค่าระบบ</a></li>
                         </ul>
@@ -86,6 +100,7 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/boot
 
 <footer class="py-3 text-center text-muted small border-top bg-white">
     <?= Html::encode(Yii::$app->name) ?> · &copy; <?= date('Y') + 543 ?>
+    · <a href="<?= Url::to(['/site/terms']) ?>" class="text-decoration-none">เงื่อนไขผู้จัดงาน</a>
     · พัฒนาโดย <a href="https://manitgithub.github.io/" target="_blank" rel="noopener" class="text-decoration-none">มานิต จิตต์ประไพย</a>
 </footer>
 <?php $this->endBody() ?>

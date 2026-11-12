@@ -22,6 +22,12 @@ $canBook = $event->isOnSale();
             &nbsp;·&nbsp; <i class="bi bi-geo-alt"></i> <?= Html::encode($event->venue->name) ?><?php if ($event->venue->location): ?> <span class="small">(<?= Html::encode($event->venue->location) ?>)</span><?php endif ?>
             <?php if ($event->organizer): ?>&nbsp;·&nbsp; <?= Html::encode($event->organizer) ?><?php endif ?>
         </div>
+        <?php if ($event->owner_id): ?>
+            <div class="small text-muted mt-1"><i class="bi bi-info-circle"></i>
+                งานนี้จัดโดย <?= Html::encode($event->organizer ?: 'ผู้จัดงาน') ?> ซึ่งเป็นผู้รับผิดชอบการจัดงาน การรับเงิน และการคืนเงินทั้งหมด
+                ระบบจองเป็นเพียงเครื่องมือ ไม่ได้เป็นผู้จัดงาน
+            </div>
+        <?php endif ?>
         <?php if ($event->description): ?>
             <p class="mt-2 mb-0"><?= nl2br(Html::encode($event->description)) ?></p>
         <?php endif ?>

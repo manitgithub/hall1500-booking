@@ -15,6 +15,8 @@ use yii\widgets\ActiveForm;
 $this->title = $event->isNewRecord ? 'เพิ่มการแสดง' : 'แก้ไข: ' . $event->title;
 $dt = fn($v) => $v ? date('Y-m-d\TH:i', strtotime($v)) : '';
 $seatCount = $venueSeatCounts[$event->venue_id] ?? [];
+$isAdmin = Yii::$app->user->identity->isAdmin();
+$ownAccount = (bool)$event->owner_id; // งานของผู้จัดงาน: ต้องใช้บัญชีของผู้จัดเอง
 $venueOptions = Venue::options();
 if ($event->venue_id && !isset($venueOptions[$event->venue_id]) && $event->venue) {
     $venueOptions[$event->venue_id] = $event->venue->name . ' (ปิดใช้งาน)';
@@ -33,7 +35,8 @@ if ($event->venue_id && !isset($venueOptions[$event->venue_id]) && $event->venue
         <div class="card border-0 shadow-sm"><div class="card-body">
             <?= $form->field($event, 'title') ?>
             <?= $form->field($event, 'venue_id')->dropDownList($venueOptions, ['class' => 'form-select', 'id' => 'venue-id'])
-                ->hint('ผังที่นั่งและจำนวนที่นั่งตามสถานที่ที่เลือก · <a href="' . \yii\helpers\Url::to(['venues']) . '">จัดการสถานที่</a>') ?>
+                ->hint('ผังที่นั่งและจำนวนที่นั่งตามสถานที่ที่เลือก'
+                    . ($isAdmin ? ' · <a href="' . \yii\helpers\Url::to(['venues']) . '">จัดการสถานที่</a>' : '')) ?>
             <div class="row">
                 <div class="col-md-6"><?= $form->field($event, 'category')->dropDownList(Event::categories(), ['class' => 'form-select']) ?></div>
                 <div class="col-md-6"><?= $form->field($event, 'organizer') ?></div>
@@ -76,10 +79,14 @@ if ($event->venue_id && !isset($venueOptions[$event->venue_id]) && $event->venue
         </div></div>
         <div class="card border-0 shadow-sm mt-3"><div class="card-body">
             <h2 class="h6"><i class="bi bi-qr-code"></i> บัญชีรับเงินของงานนี้</h2>
+            <?php if ($ownAccount): ?>
+                <div class="alert alert-info small py-2">เงินค่าบัตรของงานนี้โอนเข้าบัญชีของผู้จัดงานโดยตรง ผู้จัดงานตรวจสลิปและรับผิดชอบการเงินเอง</div>
+            <?php endif ?>
             <?= $form->field($event, 'promptpay_id')->textInput([
-                'inputmode' => 'numeric', 'autocomplete' => 'off', 'placeholder' => 'ค่ากลาง: ' . Setting::promptpayId(),
-            ])->hint('ว่าง = ใช้บัญชีกลางจาก <a href="' . \yii\helpers\Url::to(['settings']) . '">ตั้งค่าระบบ</a>') ?>
-            <?= $form->field($event, 'promptpay_name')->textInput(['placeholder' => 'ค่ากลาง: ' . Setting::promptpayName()])
+                'inputmode' => 'numeric', 'autocomplete' => 'off',
+                'placeholder' => $ownAccount ? 'เบอร์มือถือ หรือเลขผู้เสียภาษีของผู้จัดงาน' : 'ค่ากลาง: ' . Setting::promptpayId(),
+            ])->hint($ownAccount ? 'จำเป็น' : 'ว่าง = ใช้บัญชีกลางจาก <a href="' . \yii\helpers\Url::to(['settings']) . '">ตั้งค่าระบบ</a>') ?>
+            <?= $form->field($event, 'promptpay_name')->textInput(['placeholder' => $ownAccount ? 'ชื่อบัญชีตามที่แอปธนาคารแสดง' : 'ค่ากลาง: ' . Setting::promptpayName()])
                 ->hint('ชื่อที่ผู้โอนเห็นในหน้าชำระเงิน ควรตรงกับชื่อที่แอปธนาคารแสดง') ?>
         </div></div>
         <div class="d-grid mt-3"><button class="btn btn-primary btn-lg">บันทึก</button></div>

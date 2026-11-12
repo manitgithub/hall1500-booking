@@ -6,6 +6,7 @@ use app\models\Booking;
 use app\models\Event;
 use app\models\EventZonePrice;
 use app\models\Hall;
+use app\models\OrganizerApplication;
 use app\models\Payment;
 use app\models\Setting;
 use app\models\User;
@@ -46,7 +47,8 @@ class SeedController extends Controller
         $users = $this->seedUsers();
         $this->seedSettings($users['Udevadmin']);
         $venues = $this->seedVenues();
-        $events = $this->seedEvents($venues);
+        $this->seedOrganizers($users);
+        $events = $this->seedEvents($venues, $users);
         $this->seedBookings($events, $users);
 
         $this->stdout("\nเสร็จแล้ว: " . count($users) . " ผู้ใช้, " . count($events) . " การแสดง, "
@@ -62,6 +64,12 @@ class SeedController extends Controller
             $db->createCommand()->truncateTable("{{%$t}}")->execute();
         }
         $db->createCommand('SET FOREIGN_KEY_CHECKS=1')->execute();
+        // ใบสมัครผู้จัดงานของผู้ใช้ทดสอบ (พร้อมไฟล์บัตรตัวอย่าง)
+        $testUsers = User::find()->select('id')->where(['or', ['like', 'line_user_id', 'Useed%', false], ['like', 'line_user_id', 'Udev%', false]])->column();
+        foreach (OrganizerApplication::findAll(['user_id' => $testUsers]) as $a) {
+            @unlink($a->idCardPath());
+            $a->delete();
+        }
         // ลบเฉพาะผู้ใช้ตัวอย่าง (ไม่แตะผู้ใช้ LINE จริงและผู้ใช้ dev-login)
         User::deleteAll(['like', 'line_user_id', 'Useed%', false]);
         $this->stdout("ลบข้อมูลเดิมแล้ว\n");
@@ -72,6 +80,7 @@ class SeedController extends Controller
     {
         $list = [
             ['Udevadmin', 'ทดสอบ (admin)', 'admin'],
+            ['Udevorganizer', 'ทดสอบ (organizer)', 'organizer'],
             ['Udevstaff', 'ทดสอบ (staff)', 'staff'],
             ['Udevuser', 'ทดสอบ (user)', 'user'],
             ['Useed01', 'สมชาย ใจดี', 'user'],
@@ -82,6 +91,7 @@ class SeedController extends Controller
             ['Useed06', 'อรอุมา บุญมา', 'user'],
             ['Useed07', 'ธีรศักดิ์ พรหมวงศ์', 'user'],
             ['Useed08', 'วิภาวดี จันทร์เพ็ญ', 'user'],
+            ['Useed09', 'วรวุฒิ จัดเก่ง', 'user'],
         ];
         $users = [];
         foreach ($list as $i => [$sub, $name, $role]) {
@@ -103,6 +113,56 @@ class SeedController extends Controller
         Setting::set(Setting::PROMPTPAY_ID, '0931464976', $admin->id);
         Setting::set(Setting::PROMPTPAY_NAME, Setting::promptpayName() ?: Setting::siteName(), $admin->id);
         $this->stdout('PromptPay: ' . Setting::promptpayId() . ' (' . Setting::promptpayName() . ")\n");
+    }
+
+    /**
+     * ผู้จัดงานตัวอย่าง: ทดสอบ (organizer) อนุมัติแล้ว, วรวุฒิ รอตรวจสอบ
+     * ใช้ภาพบัตรปลอมที่เขียนว่า SAMPLE เท่านั้น
+     * @param User[] $users
+     */
+    private function seedOrganizers(array $users): void
+    {
+        $terms = Setting::organizerTerms();
+        $defs = [
+            ['Udevorganizer', 'ผู้จัด ทดสอบ', 'ชุมนุมศิลปะการแสดง', OrganizerApplication::STATUS_APPROVED],
+            ['Useed09', 'วรวุฒิ จัดเก่ง', 'ชมรมดนตรีไทย', OrganizerApplication::STATUS_PENDING],
+        ];
+        foreach ($defs as $i => [$sub, $name, $org, $status]) {
+            $u = $users[$sub];
+            $file = 'u' . $u->id . '-seed-sample.png';
+            $this->sampleIdCard(OrganizerApplication::storageDir() . '/' . $file, $i + 1);
+            $a = new OrganizerApplication([
+                'user_id' => $u->id, 'full_name' => $name, 'organization' => $org, 'phone' => $u->phone, 'email' => $u->email,
+                'id_card_file' => $file, 'id_card_mime' => 'image/png',
+                'terms_text' => $terms, 'terms_hash' => hash('sha256', $terms),
+                'terms_accepted_at' => date('Y-m-d H:i:s', strtotime('-2 days')), 'accepted_ip' => '127.0.0.1',
+                'pdpa_consent' => 1, 'status' => $status,
+            ]);
+            if ($status === OrganizerApplication::STATUS_APPROVED) {
+                $a->reviewed_by = $users['Udevadmin']->id;
+                $a->reviewed_at = date('Y-m-d H:i:s', strtotime('-1 day'));
+            }
+            $a->save(false);
+        }
+        $this->stdout("ใบสมัครผู้จัดงาน: " . count($defs) . " (อนุมัติ 1, รอตรวจ 1)\n");
+    }
+
+    /** ภาพบัตรตัวอย่าง (ไม่ใช่บัตรจริง) */
+    private function sampleIdCard(string $path, int $n): void
+    {
+        $im = imagecreatetruecolor(640, 400);
+        imagefill($im, 0, 0, imagecolorallocate($im, 220, 235, 245));
+        $dark = imagecolorallocate($im, 40, 60, 90);
+        $red = imagecolorallocate($im, 200, 30, 30);
+        imagerectangle($im, 10, 10, 629, 389, $dark);
+        imagefilledrectangle($im, 40, 110, 200, 300, imagecolorallocate($im, 180, 195, 210));
+        imagestring($im, 5, 230, 60, 'SAMPLE ID CARD - NOT A REAL DOCUMENT', $red);
+        imagestring($im, 5, 230, 130, 'Name: Test Organizer ' . $n, $dark);
+        imagestring($im, 5, 230, 160, 'ID: X-XXXX-XXXXX-XX-X', $dark);
+        imagestring($im, 5, 230, 190, 'For development seed data only', $dark);
+        imagestring($im, 5, 230, 320, 'SAMPLE  SAMPLE  SAMPLE', $red);
+        imagepng($im, $path);
+        imagedestroy($im);
     }
 
     /** @return Venue[] keyed by slug */
@@ -133,9 +193,10 @@ class SeedController extends Controller
 
     /**
      * @param Venue[] $venues
+     * @param User[] $users
      * @return Event[] keyed by slug
      */
-    private function seedEvents(array $venues): array
+    private function seedEvents(array $venues, array $users): array
     {
         $d = fn(string $rel) => date('Y-m-d H:i:00', strtotime($rel));
         $defs = [
@@ -152,6 +213,7 @@ class SeedController extends Controller
             ],
             'drama' => [
                 'venue_id' => $venues['theatre']->id,
+                'owner_id' => $users['Udevorganizer']->id, // งานของผู้จัดงาน
                 'title' => 'ละครเวที "บ้านริมคลอง"',
                 'category' => 'drama',
                 'organizer' => 'ชุมนุมศิลปะการแสดง',

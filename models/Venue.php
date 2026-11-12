@@ -21,6 +21,7 @@ class Venue extends ActiveRecord
     use TimestampTrait;
 
     const LAYOUT_GRID = 'grid';
+    const GRID_CLIENT = "function () { return $('#layout').val() === 'grid'; }";
 
     // ฟิลด์ของผังแบบ grid (เก็บใน settings)
     public $grid_rows = 15;
@@ -53,10 +54,10 @@ class Venue extends ActiveRecord
             [['description'], 'string'],
             [['is_active'], 'boolean'],
             [['layout'], 'in', 'range' => array_keys($this->layoutOptions())],
-            [['grid_rows'], 'integer', 'min' => 1, 'max' => 60, 'when' => fn() => $this->isGrid()],
-            [['grid_sections'], 'match', 'pattern' => '/^\s*\d+(\s*,\s*\d+)*\s*$/', 'when' => fn() => $this->isGrid(),
+            [['grid_rows'], 'integer', 'min' => 1, 'max' => 60, 'when' => fn() => $this->isGrid(), 'whenClient' => self::GRID_CLIENT],
+            [['grid_sections'], 'match', 'pattern' => '/^\s*\d+(\s*,\s*\d+)*\s*$/', 'when' => fn() => $this->isGrid(), 'whenClient' => self::GRID_CLIENT,
                 'message' => 'ใส่จำนวนที่นั่งต่อแถวของแต่ละบล็อก คั่นด้วยจุลภาค เช่น 8,16,8'],
-            [['grid_sections'], 'validateSections', 'when' => fn() => $this->isGrid()],
+            [['grid_sections'], 'validateSections', 'when' => fn() => $this->isGrid(), 'whenClient' => self::GRID_CLIENT],
             [['grid_zone_vip', 'grid_zone_a', 'grid_zone_b'], 'integer', 'min' => 0, 'max' => 60],
         ];
     }

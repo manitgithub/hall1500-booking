@@ -3,6 +3,7 @@
 namespace app\controllers;
 
 use app\models\Event;
+use app\models\Setting;
 use Yii;
 use yii\filters\VerbFilter;
 use yii\web\Controller;
@@ -28,6 +29,12 @@ class SiteController extends Controller
             ->orderBy(['show_start' => SORT_ASC])
             ->all();
         return $this->render('index', ['events' => $events]);
+    }
+
+    /** เงื่อนไขการใช้งานสำหรับผู้จัดงาน */
+    public function actionTerms()
+    {
+        return $this->render('terms', ['terms' => Setting::organizerTerms()]);
     }
 
     public function actionLogin()

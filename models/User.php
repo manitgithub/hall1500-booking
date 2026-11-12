@@ -22,6 +22,7 @@ class User extends ActiveRecord implements IdentityInterface
     use TimestampTrait;
 
     const ROLE_USER = 'user';
+    const ROLE_ORGANIZER = 'organizer';
     const ROLE_STAFF = 'staff';
     const ROLE_ADMIN = 'admin';
 
@@ -70,6 +71,23 @@ class User extends ActiveRecord implements IdentityInterface
     public function isAdmin(): bool
     {
         return $this->role === self::ROLE_ADMIN;
+    }
+
+    /** ผู้จัดงานที่ได้รับอนุมัติ (จัดการได้เฉพาะงานของตัวเอง) */
+    public function isOrganizer(): bool
+    {
+        return $this->role === self::ROLE_ORGANIZER;
+    }
+
+    /** เข้าหลังบ้านส่วนจัดการงานได้ (แอดมิน = ทุกงาน, ผู้จัดงาน = งานของตัวเอง) */
+    public function canManageEvents(): bool
+    {
+        return $this->isAdmin() || $this->isOrganizer();
+    }
+
+    public static function roleLabels(): array
+    {
+        return [self::ROLE_USER => 'ผู้ใช้', self::ROLE_ORGANIZER => 'ผู้จัดงาน', self::ROLE_STAFF => 'เจ้าหน้าที่', self::ROLE_ADMIN => 'แอดมิน'];
     }
 
     public function isStaff(): bool

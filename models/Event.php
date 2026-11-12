@@ -10,6 +10,7 @@ use yii\db\Expression;
  * รอบการแสดง (ละครสั้น / คอนเสิร์ต ฯลฯ)
  * @property int $id
  * @property int $venue_id
+ * @property int|null $owner_id  ผู้จัดงานเจ้าของงาน (null = งานของแอดมิน)
  * @property string $title
  * @property string|null $category
  * @property string|null $description
@@ -83,7 +84,12 @@ class Event extends ActiveRecord
                 'message' => 'ต้องเป็นเบอร์มือถือ 10 หลัก, เลขประจำตัวผู้เสียภาษี 13 หลัก หรือ e-Wallet ID 15 หลัก'],
             [['promptpay_name'], 'string', 'max' => 255],
             [['promptpay_name'], 'default', 'value' => null],
+            // งานของผู้จัดงาน: เงินต้องเข้าบัญชีของผู้จัดเอง ไม่ใช้บัญชีกลางของระบบ
+            [['promptpay_id', 'promptpay_name'], 'required', 'when' => fn() => (bool)$this->owner_id,
+                'whenClient' => $this->owner_id ? 'function () { return true; }' : 'function () { return false; }',
+                'message' => 'งานของผู้จัดงานต้องระบุบัญชี PromptPay ของผู้จัดเอง'],
             [['promptpay_name'], 'required', 'when' => fn() => (bool)$this->promptpay_id,
+                'whenClient' => "function () { return $('#event-promptpay_id').val().trim() !== ''; }",
                 'message' => 'ใส่ชื่อบัญชีของหมายเลขนี้ด้วย เพื่อให้ผู้โอนตรวจสอบได้'],
             [['posterFile'], 'image', 'extensions' => 'jpg, jpeg, png, webp', 'maxSize' => 3 * 1024 * 1024, 'skipOnEmpty' => true],
         ];
@@ -101,17 +107,22 @@ class Event extends ActiveRecord
     /** หมายเลข PromptPay ที่ใช้รับเงินของงานนี้ (ไม่ได้ตั้ง = ค่ากลางของระบบ) */
     public function payPromptpayId(): string
     {
-        return $this->promptpay_id ?: Setting::promptpayId();
+        return $this->promptpay_id ?: ($this->owner_id ? '' : Setting::promptpayId());
     }
 
     public function payPromptpayName(): string
     {
-        return $this->promptpay_id ? (string)$this->promptpay_name : Setting::promptpayName();
+        return $this->promptpay_id ? (string)$this->promptpay_name : ($this->owner_id ? '' : Setting::promptpayName());
     }
 
     public function hasOwnPromptpay(): bool
     {
         return (bool)$this->promptpay_id;
+    }
+
+    public function getOwner()
+    {
+        return $this->hasOne(User::class, ['id' => 'owner_id']);
     }
 
     public function getVenue()

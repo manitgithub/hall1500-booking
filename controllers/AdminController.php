@@ -6,6 +6,7 @@ use app\models\Booking;
 use app\models\Event;
 use app\models\EventZonePrice;
 use app\models\Hall;
+use app\models\OrganizerApplication;
 use app\models\Payment;
 use app\models\PaymentSettingsForm;
 use app\models\User;
@@ -21,20 +22,48 @@ use yii\web\Response;
 use yii\web\UploadedFile;
 
 /**
- * หลังบ้าน: จัดการรอบการแสดง ราคาโซน ตรวจสลิป รายการจอง ผู้ใช้
+ * หลังบ้าน
+ *  - แอดมิน: ทุกอย่าง (สถานที่ ผู้ใช้ ผู้จัดงาน ตั้งค่า และทุกงาน)
+ *  - ผู้จัดงาน: เฉพาะงานของตัวเอง (สร้าง/แก้งาน ผังที่นั่ง ตรวจสลิป รายการจอง ส่งออก)
  */
 class AdminController extends Controller
 {
+    /** action ที่ผู้จัดงานใช้ได้ (ข้อมูลถูกจำกัดเฉพาะงานของตัวเองใน findEvent / myEventIds) */
+    const ORGANIZER_ACTIONS = [
+        'index', 'event-create', 'event-update', 'event-seats', 'block', 'sync-seats',
+        'payments', 'payment-approve', 'payment-reject', 'bookings', 'booking-cancel', 'export',
+    ];
+
+    private function me(): User
+    {
+        return Yii::$app->user->identity;
+    }
+
+    /** id งานที่ผู้ใช้ปัจจุบันจัดการได้ (null = แอดมิน ทุกงาน) */
+    private function myEventIds(): ?array
+    {
+        return $this->me()->isAdmin() ? null
+            : Event::find()->select('id')->where(['owner_id' => $this->me()->id])->column();
+    }
+
     public function behaviors()
     {
         return [
-            'access' => ['class' => AccessControl::class, 'rules' => [[
-                'allow' => true, 'roles' => ['@'],
-                'matchCallback' => fn() => Yii::$app->user->identity->isAdmin(),
-            ]]],
+            'access' => ['class' => AccessControl::class, 'rules' => [
+                [
+                    'allow' => true, 'roles' => ['@'],
+                    'matchCallback' => fn() => Yii::$app->user->identity->isAdmin(),
+                ],
+                [
+                    'allow' => true, 'roles' => ['@'],
+                    'actions' => self::ORGANIZER_ACTIONS,
+                    'matchCallback' => fn() => Yii::$app->user->identity->isOrganizer(),
+                ],
+            ]],
             'verbs' => ['class' => VerbFilter::class, 'actions' => [
                 'block' => ['post'], 'payment-approve' => ['post'], 'payment-reject' => ['post'],
                 'booking-cancel' => ['post'], 'user-role' => ['post'], 'sync-seats' => ['post'], 'venue-generate' => ['post'],
+                'organizer-review' => ['post'],
             ]],
         ];
     }
@@ -42,11 +71,20 @@ class AdminController extends Controller
     public function actionIndex()
     {
         Yii::$app->booking->releaseExpired();
-        $events = Event::find()->orderBy(['show_start' => SORT_DESC])->all();
+        $events = Event::find()->with(['venue', 'owner'])
+            ->andWhere($this->me()->isAdmin() ? [] : ['owner_id' => $this->me()->id])
+            ->orderBy(['show_start' => SORT_DESC])->all();
         $revenue = Booking::find()->select(['event_id', 'total' => 'SUM(total_amount)', 'cnt' => 'SUM(seat_count)'])
             ->where(['status' => Booking::STATUS_PAID])->groupBy('event_id')->indexBy('event_id')->asArray()->all();
-        $pendingSlips = Payment::find()->where(['status' => Payment::STATUS_PENDING, 'method' => Payment::METHOD_SLIP])->count();
-        return $this->render('index', compact('events', 'revenue', 'pendingSlips'));
+        $slipQ = Payment::find()->alias('p')->innerJoin('{{%booking}} b', 'b.id = p.booking_id')
+            ->where(['p.status' => Payment::STATUS_PENDING, 'p.method' => Payment::METHOD_SLIP]);
+        if (!$this->me()->isAdmin()) {
+            $slipQ->andWhere(['b.event_id' => $this->myEventIds() ?: [0]]);
+        }
+        $pendingSlips = $slipQ->count();
+        $pendingOrganizers = $this->me()->isAdmin()
+            ? OrganizerApplication::find()->where(['status' => OrganizerApplication::STATUS_PENDING])->count() : 0;
+        return $this->render('index', compact('events', 'revenue', 'pendingSlips', 'pendingOrganizers'));
     }
 
     // ---------------------------------------------------------------- events
@@ -59,6 +97,9 @@ class AdminController extends Controller
         }
         $event = new Event([
             'venue_id' => (int)Yii::$app->request->get('venue_id') ?: array_key_first(Venue::options()),
+            'owner_id' => $this->me()->isAdmin() ? null : $this->me()->id,
+            'organizer' => $this->me()->isAdmin() ? null
+                : (OrganizerApplication::latestFor($this->me()->id)->organization ?? $this->me()->display_name),
             'status' => Event::STATUS_DRAFT,
             'category' => 'concert',
             'max_seats_per_booking' => Yii::$app->params['booking']['maxSeatsPerBooking'],
@@ -166,6 +207,8 @@ class AdminController extends Controller
         $provider = new ActiveDataProvider([
             'query' => Payment::find()->with(['booking.event', 'booking.user', 'booking.seats', 'verifier'])
                 ->where(['method' => Payment::METHOD_SLIP])
+                ->andFilterWhere(['booking_id' => $this->myEventIds() === null ? null
+                    : (Booking::find()->select('id')->where(['event_id' => $this->myEventIds() ?: [0]])->column() ?: [0])])
                 ->andFilterWhere(['status' => $status ?: null])
                 ->orderBy(['id' => $status === Payment::STATUS_PENDING ? SORT_ASC : SORT_DESC]),
             'pagination' => ['pageSize' => 20],
@@ -206,12 +249,16 @@ class AdminController extends Controller
     {
         $query = Booking::find()->with(['event', 'user', 'seats'])->orderBy(['id' => SORT_DESC]);
         $query->andFilterWhere(['event_id' => $event_id ?: null, 'status' => $status ?: null]);
+        $mine = $this->myEventIds();
+        if ($mine !== null) {
+            $query->andWhere(['event_id' => $mine ?: [0]]);
+        }
         if ($q) {
             $query->joinWith('user u')->andWhere(['or', ['like', 'code', $q], ['like', 'u.display_name', $q]]);
         }
         return $this->render('bookings', [
             'provider' => new ActiveDataProvider(['query' => $query, 'pagination' => ['pageSize' => 30]]),
-            'events' => Event::find()->select(['title', 'id'])->indexBy('id')->column(),
+            'events' => Event::find()->select(['title', 'id'])->andFilterWhere(['id' => $mine])->indexBy('id')->column(),
             'event_id' => $event_id, 'status' => $status, 'q' => $q,
         ]);
     }
@@ -219,6 +266,7 @@ class AdminController extends Controller
     public function actionBookingCancel($id)
     {
         $b = Booking::findOne((int)$id) ?? throw new NotFoundHttpException();
+        $this->findEvent($b->event_id); // ตรวจสิทธิ์
         $status = Yii::$app->request->post('refund') ? Booking::STATUS_REFUNDED : Booking::STATUS_CANCELLED;
         Yii::$app->booking->adminCancel($b, $status, 'ยกเลิกโดย ' . Yii::$app->user->identity->display_name);
         Yii::$app->session->setFlash('info', "ยกเลิก {$b->code} และปล่อยที่นั่งแล้ว");
@@ -260,7 +308,7 @@ class AdminController extends Controller
         $role = Yii::$app->request->post('role');
         if ($u->id === Yii::$app->user->id) {
             Yii::$app->session->setFlash('warning', 'ไม่สามารถเปลี่ยนสิทธิ์ตัวเองได้');
-        } elseif (in_array($role, [User::ROLE_USER, User::ROLE_STAFF, User::ROLE_ADMIN], true)) {
+        } elseif (isset(User::roleLabels()[$role])) {
             $u->updateAttributes(['role' => $role]);
             Yii::$app->session->setFlash('success', "เปลี่ยนสิทธิ์ {$u->display_name} เป็น $role แล้ว");
         }
@@ -366,13 +414,80 @@ class AdminController extends Controller
 
     // --------------------------------------------------------------- helpers
 
+    /** การแสดงที่ผู้ใช้ปัจจุบันจัดการได้ (ผู้จัดงาน = เฉพาะงานของตัวเอง) */
     private function findEvent($id): Event
     {
-        return Event::findOne((int)$id) ?? throw new NotFoundHttpException();
+        $e = Event::findOne((int)$id);
+        if (!$e || (!$this->me()->isAdmin() && (int)$e->owner_id !== (int)$this->me()->id)) {
+            throw new NotFoundHttpException();
+        }
+        return $e;
     }
 
     private function findPayment($id): Payment
     {
-        return Payment::find()->with('booking.event')->where(['id' => (int)$id])->one() ?? throw new NotFoundHttpException();
+        $p = Payment::find()->with('booking.event')->where(['id' => (int)$id])->one() ?? throw new NotFoundHttpException();
+        $this->findEvent($p->booking->event_id);
+        return $p;
+    }
+
+    // ------------------------------------------------------------ organizers
+
+    public function actionOrganizers($status = OrganizerApplication::STATUS_PENDING)
+    {
+        $provider = new ActiveDataProvider([
+            'query' => OrganizerApplication::find()->with(['user', 'reviewer'])
+                ->andFilterWhere(['status' => $status ?: null])->orderBy(['id' => SORT_DESC]),
+            'pagination' => ['pageSize' => 30],
+        ]);
+        $eventCounts = Event::find()->select(['c' => 'COUNT(*)', 'owner_id'])->where(['not', ['owner_id' => null]])
+            ->groupBy('owner_id')->indexBy('owner_id')->column();
+        return $this->render('organizers', ['provider' => $provider, 'status' => $status, 'eventCounts' => $eventCounts]);
+    }
+
+    public function actionOrganizer($id)
+    {
+        $app = OrganizerApplication::findOne((int)$id) ?? throw new NotFoundHttpException();
+        $events = Event::find()->where(['owner_id' => $app->user_id])->orderBy(['show_start' => SORT_DESC])->all();
+        return $this->render('organizer', ['app' => $app, 'events' => $events]);
+    }
+
+    /** เปิดดูสำเนาบัตรประชาชน (เฉพาะแอดมิน ไฟล์อยู่นอก web root) */
+    public function actionOrganizerIdCard($id)
+    {
+        $app = OrganizerApplication::findOne((int)$id) ?? throw new NotFoundHttpException();
+        $path = $app->idCardPath();
+        if (!is_file($path)) {
+            throw new NotFoundHttpException('ไม่พบไฟล์');
+        }
+        Yii::info("ID card of application #{$app->id} viewed by user #{$this->me()->id}", 'organizer');
+        $res = Yii::$app->response->sendFile($path, 'idcard-' . $app->id . '.' . pathinfo($path, PATHINFO_EXTENSION), [
+            'mimeType' => $app->id_card_mime, 'inline' => true,
+        ]);
+        $res->headers->set('Cache-Control', 'private, no-store');
+        $res->headers->set('X-Content-Type-Options', 'nosniff');
+        return $res;
+    }
+
+    public function actionOrganizerReview($id)
+    {
+        $app = OrganizerApplication::findOne((int)$id) ?? throw new NotFoundHttpException();
+        $status = Yii::$app->request->post('status');
+        $note = mb_substr(trim((string)Yii::$app->request->post('note')), 0, 500);
+        $allowed = [
+            OrganizerApplication::STATUS_PENDING => [OrganizerApplication::STATUS_APPROVED, OrganizerApplication::STATUS_REJECTED],
+            OrganizerApplication::STATUS_APPROVED => [OrganizerApplication::STATUS_REVOKED],
+            OrganizerApplication::STATUS_REVOKED => [OrganizerApplication::STATUS_APPROVED],
+        ];
+        if (!in_array($status, $allowed[$app->status] ?? [], true)) {
+            Yii::$app->session->setFlash('danger', 'เปลี่ยนสถานะนี้ไม่ได้');
+        } elseif ($status === OrganizerApplication::STATUS_REJECTED && $note === '') {
+            Yii::$app->session->setFlash('warning', 'กรุณาระบุเหตุผลที่ไม่อนุมัติ เพื่อให้ผู้สมัครแก้ไขได้');
+        } else {
+            $app->review($status, $this->me(), $note);
+            Yii::$app->session->setFlash('success', $app->full_name . ': ' . OrganizerApplication::statusLabels()[$status]
+                . ($status === OrganizerApplication::STATUS_REVOKED ? ' (ปิดการขายงานที่เปิดอยู่แล้ว)' : ''));
+        }
+        return $this->redirect(['organizer', 'id' => $app->id]);
     }
 }
