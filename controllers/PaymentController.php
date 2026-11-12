@@ -41,6 +41,31 @@ class PaymentController extends Controller
         return parent::beforeAction($action);
     }
 
+    /** ภาพสลิป (ไฟล์อยู่นอก web root) */
+    public function actionSlipImage($id)
+    {
+        $p = Payment::find()->with('booking.event')->where(['id' => (int)$id])->one();
+        if (!$p || !$p->slip_path) {
+            throw new NotFoundHttpException();
+        }
+        if (!$p->canViewSlip(Yii::$app->user->identity)) {
+            throw new ForbiddenHttpException();
+        }
+        $file = $p->slipFile();
+        if (!is_file($file)) {
+            throw new NotFoundHttpException('ไม่พบไฟล์สลิป');
+        }
+        $mime = \yii\helpers\FileHelper::getMimeType($file);
+        $isImage = in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true);
+        $res = Yii::$app->response->sendFile($file, 'slip-' . $p->booking->code . '.' . pathinfo($file, PATHINFO_EXTENSION), [
+            'mimeType' => $isImage ? $mime : 'application/octet-stream',
+            'inline' => $isImage,
+        ]);
+        $res->headers->set('Cache-Control', 'private, no-store');
+        $res->headers->set('X-Content-Type-Options', 'nosniff');
+        return $res;
+    }
+
     /** QR PromptPay ตามยอดเงินของรายการจอง */
     public function actionPromptpayQr($code)
     {

@@ -59,6 +59,10 @@ class SeedController extends Controller
     private function wipe(): void
     {
         $db = Yii::$app->db;
+        // สลิปของรายการที่กำลังจะถูกลบ
+        foreach (Payment::find()->where(['not', ['slip_path' => null]])->each() as $p) {
+            @unlink($p->slipFile());
+        }
         $db->createCommand('SET FOREIGN_KEY_CHECKS=0')->execute();
         foreach (['payment', 'booking_seat', 'event_seat', 'booking', 'event_zone_price', 'event', 'seat', 'venue'] as $t) {
             $db->createCommand()->truncateTable("{{%$t}}")->execute();

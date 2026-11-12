@@ -72,8 +72,35 @@ class Payment extends ActiveRecord
         return $this->hasOne(User::class, ['id' => 'verified_by']);
     }
 
+    /** โฟลเดอร์เก็บสลิป (นอก web root: มีชื่อและเลขบัญชีผู้โอน) */
+    public static function slipDir(): string
+    {
+        $dir = Yii::getAlias('@app/storage/slips');
+        if (!is_dir($dir)) {
+            mkdir($dir, 0750, true);
+        }
+        return $dir;
+    }
+
+    public function slipFile(): ?string
+    {
+        return $this->slip_path ? self::slipDir() . '/' . basename($this->slip_path) : null;
+    }
+
+    /** ลิงก์ดูสลิปผ่าน PaymentController (ตรวจสิทธิ์ทุกครั้ง) */
     public function getSlipUrl(): ?string
     {
-        return $this->slip_path ? Yii::getAlias('@web/uploads/slips/' . $this->slip_path) : null;
+        return $this->slip_path ? \yii\helpers\Url::to(['/payment/slip-image', 'id' => $this->id]) : null;
+    }
+
+    /** ผู้จองเจ้าของสลิป, แอดมิน, หรือผู้จัดงานเจ้าของการแสดง */
+    public function canViewSlip(?User $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+        $b = $this->booking;
+        return $user->isAdmin() || (int)$b->user_id === (int)$user->id
+            || ($user->isOrganizer() && (int)$b->event->owner_id === (int)$user->id);
     }
 }

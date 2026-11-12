@@ -180,7 +180,7 @@ class BookingService extends Component
             throw new UserException('รายการนี้หมดเวลาชำระเงินหรือชำระแล้ว');
         }
         $name = $b->code . '-' . Yii::$app->security->generateRandomString(10) . '.' . strtolower($form->slip->extension);
-        $dir = Yii::getAlias('@webroot/uploads/slips');
+        $dir = Payment::slipDir();
         if (!$form->slip->saveAs("$dir/$name")) {
             throw new UserException('อัปโหลดสลิปไม่สำเร็จ');
         }
