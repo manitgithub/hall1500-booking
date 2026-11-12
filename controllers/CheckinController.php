@@ -9,7 +9,7 @@ use yii\web\Controller;
 use yii\web\Response;
 
 /**
- * สแกน QR ตั๋วหน้างาน (staff / admin)
+ * สแกน QR ตั๋วหน้างาน (แอดมิน = ทุกงาน, ผู้จัดงาน = งานของตัวเอง)
  */
 class CheckinController extends Controller
 {
@@ -18,7 +18,7 @@ class CheckinController extends Controller
         return [
             'access' => ['class' => AccessControl::class, 'rules' => [[
                 'allow' => true, 'roles' => ['@'],
-                'matchCallback' => fn() => Yii::$app->user->identity->isStaff(),
+                'matchCallback' => fn() => Yii::$app->user->identity->canManageEvents(),
             ]]],
             'verbs' => ['class' => VerbFilter::class, 'actions' => ['verify' => ['post']]],
         ];

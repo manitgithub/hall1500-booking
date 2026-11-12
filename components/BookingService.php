@@ -196,7 +196,7 @@ class BookingService extends Component
                 'transferred_at' => $form->transferred_at,
             ]);
             $p->save(false);
-            // หยุดนับเวลาหมดอายุระหว่างรอเจ้าหน้าที่ตรวจ
+            // หยุดนับเวลาหมดอายุระหว่างรอผู้จัดงานตรวจ
             $n = $this->db()->createCommand()->update('{{%booking}}',
                 ['status' => Booking::STATUS_VERIFYING, 'updated_at' => $this->now()],
                 ['id' => $b->id, 'status' => Booking::STATUS_PENDING])->execute();
@@ -316,7 +316,7 @@ class BookingService extends Component
      * เช็คอินหน้างานจากข้อมูลใน QR
      * @return array{ok:bool,message:string,booking:?Booking}
      */
-    public function checkIn(string $qrData, User $staff): array
+    public function checkIn(string $qrData, User $checker): array
     {
         $parts = explode('|', trim($qrData));
         if (count($parts) !== 3 || $parts[0] !== 'HALL1500') {
@@ -326,6 +326,10 @@ class BookingService extends Component
         if (!$b || !$b->ticket_token || !hash_equals($b->ticket_token, $parts[2])) {
             return ['ok' => false, 'message' => 'ไม่พบตั๋ว หรือตั๋วไม่ถูกต้อง', 'booking' => null];
         }
+        // ผู้จัดงานเช็คอินได้เฉพาะงานของตัวเอง (ไม่เปิดเผยข้อมูลผู้ซื้อของงานอื่น)
+        if (!$checker->managesEvent($b->event)) {
+            return ['ok' => false, 'message' => 'ตั๋วนี้เป็นของงานอื่น: ' . $b->event->title, 'booking' => null];
+        }
         if ($b->status !== Booking::STATUS_PAID) {
             return ['ok' => false, 'message' => 'ตั๋วนี้สถานะ: ' . Booking::statusLabels()[$b->status], 'booking' => $b];
         }
@@ -333,7 +337,7 @@ class BookingService extends Component
             return ['ok' => false, 'message' => 'ตั๋วนี้เช็คอินแล้วเมื่อ ' . Yii::$app->formatter->asDatetime($b->checked_in_at), 'booking' => $b];
         }
         $n = $this->db()->createCommand()->update('{{%booking}}',
-            ['checked_in_at' => $this->now(), 'checked_in_by' => $staff->id],
+            ['checked_in_at' => $this->now(), 'checked_in_by' => $checker->id],
             ['id' => $b->id, 'checked_in_at' => null])->execute();
         $b->refresh();
         return $n

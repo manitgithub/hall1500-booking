@@ -85,7 +85,6 @@ class SeedController extends Controller
         $list = [
             ['Udevadmin', 'ทดสอบ (admin)', 'admin'],
             ['Udevorganizer', 'ทดสอบ (organizer)', 'organizer'],
-            ['Udevstaff', 'ทดสอบ (staff)', 'staff'],
             ['Udevuser', 'ทดสอบ (user)', 'user'],
             ['Useed01', 'สมชาย ใจดี', 'user'],
             ['Useed02', 'สมหญิง รักเรียน', 'user'],
@@ -283,7 +282,6 @@ class SeedController extends Controller
     private function seedBookings(array $events, array $users): void
     {
         $svc = Yii::$app->booking;
-        $staff = $users['Udevstaff'];
         $admin = $users['Udevadmin'];
         $buyers = array_values(array_filter($users, fn($u) => str_starts_with($u->line_user_id, 'Useed')));
 
@@ -301,7 +299,7 @@ class SeedController extends Controller
                 $b->refresh();
                 $svc->confirmPaid($b);
                 if ($i < 2) {
-                    $b->updateAttributes(['checked_in_at' => date('Y-m-d H:i:s'), 'checked_in_by' => $staff->id]);
+                    $b->updateAttributes(['checked_in_at' => date('Y-m-d H:i:s'), 'checked_in_by' => $e->owner_id ?: $admin->id]);
                 }
             }
 

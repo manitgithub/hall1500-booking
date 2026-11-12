@@ -23,7 +23,6 @@ class User extends ActiveRecord implements IdentityInterface
 
     const ROLE_USER = 'user';
     const ROLE_ORGANIZER = 'organizer';
-    const ROLE_STAFF = 'staff';
     const ROLE_ADMIN = 'admin';
 
     public static function tableName()
@@ -38,7 +37,7 @@ class User extends ActiveRecord implements IdentityInterface
             [['display_name', 'email'], 'string', 'max' => 255],
             [['email'], 'email'],
             [['phone'], 'match', 'pattern' => '/^0\d{8,9}$/', 'message' => 'เบอร์โทรไม่ถูกต้อง'],
-            [['role'], 'in', 'range' => [self::ROLE_USER, self::ROLE_STAFF, self::ROLE_ADMIN]],
+            [['role'], 'in', 'range' => [self::ROLE_USER, self::ROLE_ORGANIZER, self::ROLE_ADMIN]],
         ];
     }
 
@@ -87,12 +86,13 @@ class User extends ActiveRecord implements IdentityInterface
 
     public static function roleLabels(): array
     {
-        return [self::ROLE_USER => 'ผู้ใช้', self::ROLE_ORGANIZER => 'ผู้จัดงาน', self::ROLE_STAFF => 'เจ้าหน้าที่', self::ROLE_ADMIN => 'แอดมิน'];
+        return [self::ROLE_USER => 'ผู้ใช้', self::ROLE_ORGANIZER => 'ผู้จัดงาน', self::ROLE_ADMIN => 'แอดมิน'];
     }
 
-    public function isStaff(): bool
+    /** ผู้ใช้นี้จัดการงานนี้ได้หรือไม่ (แอดมิน = ทุกงาน, ผู้จัดงาน = งานของตัวเอง) */
+    public function managesEvent(Event $event): bool
     {
-        return in_array($this->role, [self::ROLE_STAFF, self::ROLE_ADMIN], true);
+        return $this->isAdmin() || ($this->isOrganizer() && (int)$event->owner_id === (int)$this->id);
     }
 
     public static function findIdentity($id)

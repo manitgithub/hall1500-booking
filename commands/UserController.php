@@ -25,8 +25,8 @@ class UserController extends Controller
     public function actionRole($id, $role)
     {
         $u = ctype_digit((string)$id) ? User::findOne((int)$id) : User::findOne(['line_user_id' => $id]);
-        if (!$u || !in_array($role, ['user', 'staff', 'admin'], true)) {
-            $this->stderr("ไม่พบผู้ใช้ หรือ role ไม่ถูกต้อง (user|staff|admin)\n");
+        if (!$u || !in_array($role, ['user', 'organizer', 'admin'], true)) {
+            $this->stderr("ไม่พบผู้ใช้ หรือ role ไม่ถูกต้อง (user|organizer|admin)\n");
             return ExitCode::DATAERR;
         }
         $u->updateAttributes(['role' => $role]);

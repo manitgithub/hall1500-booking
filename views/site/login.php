@@ -28,7 +28,6 @@ $this->title = 'เข้าสู่ระบบ';
                     <div class="btn-group">
                         <a class="btn btn-outline-secondary btn-sm" href="<?= Url::to(['/auth/dev-login', 'role' => 'user']) ?>">ผู้ใช้</a>
                         <a class="btn btn-outline-secondary btn-sm" href="<?= Url::to(['/auth/dev-login', 'role' => 'organizer']) ?>">ผู้จัดงาน</a>
-                        <a class="btn btn-outline-secondary btn-sm" href="<?= Url::to(['/auth/dev-login', 'role' => 'staff']) ?>">เจ้าหน้าที่</a>
                         <a class="btn btn-outline-secondary btn-sm" href="<?= Url::to(['/auth/dev-login', 'role' => 'admin']) ?>">แอดมิน</a>
                     </div>
                 <?php endif ?>

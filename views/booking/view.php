@@ -124,7 +124,7 @@ JS);
         <?php elseif ($b->status === Booking::STATUS_VERIFYING): ?>
             <div class="card border-0 shadow-sm text-center p-4">
                 <i class="bi bi-hourglass-top fs-1 text-info"></i>
-                <h2 class="h5 mt-2">ได้รับสลิปแล้ว รอเจ้าหน้าที่ตรวจสอบ</h2>
+                <h2 class="h5 mt-2">ได้รับสลิปแล้ว รอผู้จัดงานตรวจสอบ</h2>
                 <p class="text-muted mb-0">ที่นั่งของคุณถูกล็อกไว้ระหว่างตรวจสอบ เมื่ออนุมัติแล้วจะแจ้งทาง LINE และแสดงตั๋วในหน้า "ตั๋วของฉัน"</p>
             </div>
         <?php else: ?>

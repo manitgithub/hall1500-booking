@@ -32,7 +32,7 @@ class Booking extends ActiveRecord
     use TimestampTrait;
 
     const STATUS_PENDING = 'pending';      // ล็อกที่นั่งแล้ว รอชำระ
-    const STATUS_VERIFYING = 'verifying';  // แนบสลิปแล้ว รอเจ้าหน้าที่ตรวจ
+    const STATUS_VERIFYING = 'verifying';  // แนบสลิปแล้ว รอผู้จัดงานตรวจ
     const STATUS_PAID = 'paid';
     const STATUS_CANCELLED = 'cancelled';
     const STATUS_EXPIRED = 'expired';
@@ -137,6 +137,6 @@ class Booking extends ActiveRecord
 
     public function canView(?User $user): bool
     {
-        return $user && ($user->id === $this->user_id || $user->isStaff());
+        return $user && ($user->id === $this->user_id || $user->managesEvent($this->event));
     }
 }

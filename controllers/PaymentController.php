@@ -90,7 +90,7 @@ class PaymentController extends Controller
         }
         try {
             Yii::$app->booking->submitSlip($b, $form);
-            Yii::$app->session->setFlash('success', 'ส่งสลิปเรียบร้อย เจ้าหน้าที่จะตรวจสอบและแจ้งผลทาง LINE');
+            Yii::$app->session->setFlash('success', 'ส่งสลิปเรียบร้อย ผู้จัดงานจะตรวจสอบและแจ้งผลทาง LINE');
         } catch (UserException $e) {
             Yii::$app->session->setFlash('danger', $e->getMessage());
         }
