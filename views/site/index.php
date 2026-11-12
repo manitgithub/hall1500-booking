@@ -41,3 +41,29 @@ $f = Yii::$app->formatter;
         </div>
     <?php endforeach ?>
 </div>
+
+<section class="promo mt-5 rounded-4 shadow-sm overflow-hidden">
+    <div class="row g-0">
+        <div class="col-lg-7 p-4 p-md-5 align-self-center">
+            <span class="badge promo-badge mb-3"><i class="bi bi-gift"></i> ใช้งานฟรี</span>
+            <h2 class="h3 fw-bold mb-2">อยากมีระบบจองที่นั่งแบบนี้ให้หอประชุมของคุณ?</h2>
+            <p class="mb-4 opacity-75">
+                ระบบจองที่นั่งออนไลน์สำหรับหอประชุม โรงละคร และงานสัมมนา ปรับผังที่นั่งให้ตรงกับห้องจริงได้
+                เปิดให้หน่วยงานและสถานศึกษาใช้งานฟรี สนใจติดต่อผู้พัฒนาได้เลย
+            </p>
+            <a href="https://manitgithub.github.io/" target="_blank" rel="noopener" class="btn btn-warning btn-lg fw-semibold">
+                <i class="bi bi-chat-dots"></i> ติดต่อผู้พัฒนา
+            </a>
+            <div class="small mt-2 opacity-75">มานิต จิตต์ประไพย</div>
+        </div>
+        <div class="col-lg-5 p-4 p-md-5 promo-features d-flex align-items-center">
+            <ul class="list-unstyled mb-0">
+                <li><i class="bi bi-line"></i> เข้าสู่ระบบด้วย LINE ไม่ต้องสมัครสมาชิก</li>
+                <li><i class="bi bi-grid-3x3-gap"></i> ผังที่นั่งแบบโต้ตอบ แยกโซนราคา ใช้บนมือถือได้</li>
+                <li><i class="bi bi-qr-code"></i> ชำระผ่าน QR PromptPay แนบสลิป หรือบัตรเครดิต</li>
+                <li><i class="bi bi-ticket-perforated"></i> E-ticket พร้อม QR สแกนเช็คอินหน้างาน</li>
+                <li><i class="bi bi-speedometer2"></i> หลังบ้านจัดการการแสดง ตรวจสลิป ส่งออกรายงาน</li>
+            </ul>
+        </div>
+    </div>
+</section>

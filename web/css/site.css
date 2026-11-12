@@ -55,3 +55,10 @@ body { background: #f6f5fa; font-family: "Sarabun", "Noto Sans Thai", system-ui,
 .ticket-cut::before { left: -12px; } .ticket-cut::after { right: -12px; }
 .countdown { font-variant-numeric: tabular-nums; font-weight: 700; }
 @media print { nav, footer, .no-print { display: none !important; } body { background: #fff; } }
+
+/* ---------- promo ---------- */
+.promo { background: linear-gradient(135deg, var(--brand), #7b3fa8); color: #fff; }
+.promo-badge { background: var(--brand-2); color: #2b1a00; font-size: .85rem; }
+.promo-features { background: rgba(255, 255, 255, .08); }
+.promo-features li { display: flex; gap: .6rem; padding: .45rem 0; }
+.promo-features .bi { color: var(--brand-2); font-size: 1.15rem; }
