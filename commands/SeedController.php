@@ -64,7 +64,7 @@ class SeedController extends Controller
             @unlink($p->slipFile());
         }
         $db->createCommand('SET FOREIGN_KEY_CHECKS=0')->execute();
-        foreach (['payment', 'booking_seat', 'event_seat', 'booking', 'event_zone_price', 'event', 'seat', 'venue'] as $t) {
+        foreach (['payment', 'booking_seat', 'event_seat', 'booking', 'event_zone_price', 'event_team', 'event', 'seat', 'venue'] as $t) {
             $db->createCommand()->truncateTable("{{%$t}}")->execute();
         }
         $db->createCommand('SET FOREIGN_KEY_CHECKS=1')->execute();
@@ -319,6 +319,10 @@ class SeedController extends Controller
         $b->refresh();
         $svc->confirmPaid($b);
         $svc->hold($events['drama'], $me, $this->pickSeats($events['drama'], 2));
+
+        // ทีมงานตัวอย่างของละคร (เช็คอินหน้างาน)
+        $events['drama']->teamToken();
+        $events['drama']->addTeamMember($users['Useed08']);
 
         $this->stdout("การจอง: " . Booking::find()->count() . "\n");
     }

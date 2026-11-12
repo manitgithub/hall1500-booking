@@ -2,6 +2,7 @@
 
 namespace app\controllers;
 
+use app\models\Event;
 use Yii;
 use yii\filters\AccessControl;
 use yii\filters\VerbFilter;
@@ -9,7 +10,7 @@ use yii\web\Controller;
 use yii\web\Response;
 
 /**
- * สแกน QR ตั๋วหน้างาน (แอดมิน = ทุกงาน, ผู้จัดงาน = งานของตัวเอง)
+ * สแกน QR ตั๋วหน้างาน (แอดมิน = ทุกงาน, ผู้จัดงาน = งานของตัวเอง, ทีมงาน = งานที่ได้รับเชิญ)
  */
 class CheckinController extends Controller
 {
@@ -18,7 +19,7 @@ class CheckinController extends Controller
         return [
             'access' => ['class' => AccessControl::class, 'rules' => [[
                 'allow' => true, 'roles' => ['@'],
-                'matchCallback' => fn() => Yii::$app->user->identity->canManageEvents(),
+                'matchCallback' => fn() => Yii::$app->user->identity->canUseCheckin(),
             ]]],
             'verbs' => ['class' => VerbFilter::class, 'actions' => ['verify' => ['post']]],
         ];
@@ -26,7 +27,13 @@ class CheckinController extends Controller
 
     public function actionIndex()
     {
-        return $this->render('/checkin/index');
+        $u = Yii::$app->user->identity;
+        $q = Event::find()->with('venue')->where(['>', 'show_start', date('Y-m-d H:i:s', strtotime('-1 day'))])
+            ->andWhere(['not', ['status' => Event::STATUS_DRAFT]])->orderBy('show_start');
+        if (!$u->isAdmin()) {
+            $q->andWhere(['or', ['owner_id' => $u->isOrganizer() ? $u->id : 0], ['id' => $u->teamEventIds() ?: [0]]]);
+        }
+        return $this->render('/checkin/index', ['events' => $q->all()]);
     }
 
     public function actionVerify()

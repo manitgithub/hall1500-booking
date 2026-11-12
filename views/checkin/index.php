@@ -1,6 +1,8 @@
 <?php
 /** @var yii\web\View $this */
+/** @var app\models\Event[] $events */
 
+use yii\helpers\Html;
 use yii\helpers\Json;
 use yii\helpers\Url;
 
@@ -8,7 +10,14 @@ $this->title = 'เช็คอินหน้างาน';
 $this->registerJsFile('https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js');
 ?>
 <div class="mx-auto" style="max-width:480px">
-    <h1 class="h4 text-center mb-3"><i class="bi bi-qr-code-scan"></i> สแกนตั๋ว</h1>
+    <h1 class="h4 text-center mb-2"><i class="bi bi-qr-code-scan"></i> สแกนตั๋ว</h1>
+    <div class="small text-muted text-center mb-3">
+        <?php if ($events): ?>
+            เช็คอินได้: <?= implode(' · ', array_map(fn($e) => Html::encode($e->title) . ' (' . Yii::$app->formatter->asDate($e->show_start) . ')', $events)) ?>
+        <?php else: ?>
+            ยังไม่มีงานที่กำลังจะมาถึงที่คุณเช็คอินได้
+        <?php endif ?>
+    </div>
     <div id="reader" class="bg-white rounded shadow-sm overflow-hidden"></div>
     <div id="result" class="mt-3"></div>
     <div class="input-group mt-3">

@@ -47,6 +47,7 @@ $f = Yii::$app->formatter;
                 <td class="text-end text-nowrap">
                     <a class="btn btn-sm btn-outline-secondary" href="<?= Url::to(['event-update', 'id' => $e->id]) ?>">แก้ไข</a>
                     <a class="btn btn-sm btn-outline-secondary" href="<?= Url::to(['event-seats', 'id' => $e->id]) ?>">ผังที่นั่ง</a>
+                    <a class="btn btn-sm btn-outline-secondary" href="<?= Url::to(['event-team', 'id' => $e->id]) ?>">ทีมงาน</a>
                     <a class="btn btn-sm btn-outline-secondary" href="<?= Url::to(['bookings', 'event_id' => $e->id]) ?>">รายการจอง</a>
                     <a class="btn btn-sm btn-outline-secondary" href="<?= Url::to(['export', 'event_id' => $e->id]) ?>" title="CSV"><i class="bi bi-download"></i></a>
                 </td>

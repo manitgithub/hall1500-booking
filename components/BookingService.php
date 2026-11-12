@@ -326,8 +326,8 @@ class BookingService extends Component
         if (!$b || !$b->ticket_token || !hash_equals($b->ticket_token, $parts[2])) {
             return ['ok' => false, 'message' => 'ไม่พบตั๋ว หรือตั๋วไม่ถูกต้อง', 'booking' => null];
         }
-        // ผู้จัดงานเช็คอินได้เฉพาะงานของตัวเอง (ไม่เปิดเผยข้อมูลผู้ซื้อของงานอื่น)
-        if (!$checker->managesEvent($b->event)) {
+        // เช็คอินได้เฉพาะงานที่ตัวเองจัดหรืออยู่ในทีม (ไม่เปิดเผยข้อมูลผู้ซื้อของงานอื่น)
+        if (!$checker->canCheckInEvent($b->event)) {
             return ['ok' => false, 'message' => 'ตั๋วนี้เป็นของงานอื่น: ' . $b->event->title, 'booking' => null];
         }
         if ($b->status !== Booking::STATUS_PAID) {

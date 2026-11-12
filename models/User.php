@@ -89,6 +89,25 @@ class User extends ActiveRecord implements IdentityInterface
         return [self::ROLE_USER => 'ผู้ใช้', self::ROLE_ORGANIZER => 'ผู้จัดงาน', self::ROLE_ADMIN => 'แอดมิน'];
     }
 
+    /** id การแสดงที่ผู้ใช้นี้อยู่ในทีมงาน */
+    public function teamEventIds(): array
+    {
+        return array_map('intval', (new \yii\db\Query())->select('event_id')->from('{{%event_team}}')
+            ->where(['user_id' => $this->id])->column());
+    }
+
+    /** เช็คอินตั๋วของงานนี้ได้: แอดมิน, ผู้จัดงานเจ้าของงาน หรือทีมงานของงาน */
+    public function canCheckInEvent(Event $event): bool
+    {
+        return $this->managesEvent($event) || in_array((int)$event->id, $this->teamEventIds(), true);
+    }
+
+    /** เข้าหน้าเช็คอินได้ */
+    public function canUseCheckin(): bool
+    {
+        return $this->canManageEvents() || $this->teamEventIds() !== [];
+    }
+
     /** ผู้ใช้นี้จัดการงานนี้ได้หรือไม่ (แอดมิน = ทุกงาน, ผู้จัดงาน = งานของตัวเอง) */
     public function managesEvent(Event $event): bool
     {

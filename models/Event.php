@@ -25,6 +25,7 @@ use yii\db\Expression;
  * @property int $hold_minutes
  * @property string|null $promptpay_id   ว่าง = ใช้ค่ากลาง
  * @property string|null $promptpay_name
+ * @property string|null $team_token ใช้ในลิงก์เชิญทีมงาน
  *
  * @property EventZonePrice[] $zonePrices
  * @property Venue $venue
@@ -118,6 +119,55 @@ class Event extends ActiveRecord
     public function hasOwnPromptpay(): bool
     {
         return (bool)$this->promptpay_id;
+    }
+
+    // ------------------------------------------------------------------ ทีมงาน
+
+    public function getTeamMembers()
+    {
+        return $this->hasMany(User::class, ['id' => 'user_id'])->viaTable('{{%event_team}}', ['event_id' => 'id']);
+    }
+
+    public function isTeamMember(User $user): bool
+    {
+        return (new \yii\db\Query())->from('{{%event_team}}')
+            ->where(['event_id' => $this->id, 'user_id' => $user->id])->exists();
+    }
+
+    /** token ของลิงก์เชิญ (สร้างให้ครั้งแรกที่ขอ) */
+    public function teamToken(): string
+    {
+        if (!$this->team_token) {
+            $this->updateAttributes(['team_token' => Yii::$app->security->generateRandomString(24)]);
+        }
+        return $this->team_token;
+    }
+
+    /** เปลี่ยนลิงก์เชิญ ลิงก์เดิมใช้ไม่ได้ทันที (คนที่อยู่ในทีมแล้วยังอยู่) */
+    public function resetTeamToken(): void
+    {
+        $this->updateAttributes(['team_token' => Yii::$app->security->generateRandomString(24)]);
+    }
+
+    public function teamInviteUrl(): string
+    {
+        return \yii\helpers\Url::to(['/team/join', 'id' => $this->id, 't' => $this->teamToken()], true);
+    }
+
+    public function addTeamMember(User $user): bool
+    {
+        if ($this->isTeamMember($user)) {
+            return false;
+        }
+        static::getDb()->createCommand()->insert('{{%event_team}}', [
+            'event_id' => $this->id, 'user_id' => $user->id, 'joined_at' => date('Y-m-d H:i:s'),
+        ])->execute();
+        return true;
+    }
+
+    public function removeTeamMember(int $userId): void
+    {
+        static::getDb()->createCommand()->delete('{{%event_team}}', ['event_id' => $this->id, 'user_id' => $userId])->execute();
     }
 
     public function getOwner()

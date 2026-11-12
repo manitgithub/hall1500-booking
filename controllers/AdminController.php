@@ -32,6 +32,7 @@ class AdminController extends Controller
     const ORGANIZER_ACTIONS = [
         'index', 'event-create', 'event-update', 'event-seats', 'block', 'sync-seats',
         'payments', 'payment-approve', 'payment-reject', 'bookings', 'booking-cancel', 'export',
+        'event-team', 'event-team-reset', 'event-team-remove',
     ];
 
     private function me(): User
@@ -63,7 +64,7 @@ class AdminController extends Controller
             'verbs' => ['class' => VerbFilter::class, 'actions' => [
                 'block' => ['post'], 'payment-approve' => ['post'], 'payment-reject' => ['post'],
                 'booking-cancel' => ['post'], 'user-role' => ['post'], 'sync-seats' => ['post'], 'venue-generate' => ['post'],
-                'organizer-review' => ['post'],
+                'organizer-review' => ['post'], 'event-team-reset' => ['post'], 'event-team-remove' => ['post'],
             ]],
         ];
     }
@@ -189,6 +190,35 @@ class AdminController extends Controller
             WHERE es.event_id = :e AND es.booking_id IS NOT NULL
         ", [':e' => $event->id])->queryAll();
         return $this->render('event-seats', ['event' => $event, 'summary' => $event->seatSummary(), 'holders' => $holders]);
+    }
+
+    // ------------------------------------------------------------------ ทีมงาน
+
+    /** ทีมงานของการแสดง: ลิงก์เชิญ และรายชื่อ */
+    public function actionEventTeam($id)
+    {
+        $event = $this->findEvent($id);
+        $members = (new \yii\db\Query())->select(['u.id', 'u.display_name', 'u.picture_url', 't.joined_at',
+                'checked' => '(SELECT COUNT(*) FROM {{%booking}} b WHERE b.event_id = t.event_id AND b.checked_in_by = u.id)'])
+            ->from('{{%event_team}} t')->innerJoin('{{%user}} u', 'u.id = t.user_id')
+            ->where(['t.event_id' => $event->id])->orderBy('t.joined_at')->all();
+        return $this->render('event-team', ['event' => $event, 'members' => $members]);
+    }
+
+    public function actionEventTeamReset($id)
+    {
+        $event = $this->findEvent($id);
+        $event->resetTeamToken();
+        Yii::$app->session->setFlash('success', 'เปลี่ยนลิงก์เชิญแล้ว ลิงก์เดิมใช้ไม่ได้ (คนที่อยู่ในทีมแล้วยังอยู่)');
+        return $this->redirect(['event-team', 'id' => $id]);
+    }
+
+    public function actionEventTeamRemove($id)
+    {
+        $event = $this->findEvent($id);
+        $event->removeTeamMember((int)Yii::$app->request->post('user_id'));
+        Yii::$app->session->setFlash('info', 'นำออกจากทีมแล้ว');
+        return $this->redirect(['event-team', 'id' => $id]);
     }
 
     public function actionBlock($id)

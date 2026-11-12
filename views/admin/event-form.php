@@ -93,6 +93,7 @@ if ($event->venue_id && !isset($venueOptions[$event->venue_id]) && $event->venue
         <?php if (!$event->isNewRecord): ?>
             <div class="d-flex gap-2 mt-2">
                 <a class="btn btn-outline-secondary flex-fill" href="<?= Url::to(['event-seats', 'id' => $event->id]) ?>">จัดการผังที่นั่ง</a>
+                <a class="btn btn-outline-secondary flex-fill" href="<?= Url::to(['event-team', 'id' => $event->id]) ?>">ทีมงาน</a>
                 <a class="btn btn-outline-secondary flex-fill" href="<?= Url::to(['/event/view', 'id' => $event->id]) ?>">ดูหน้าจอง</a>
             </div>
         <?php endif ?>

@@ -35,7 +35,7 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/boot
                 <?php if ($user): ?>
                     <li class="nav-item"><a class="nav-link" href="<?= Url::to(['/booking/my']) ?>">ตั๋วของฉัน</a></li>
                 <?php endif ?>
-                <?php if ($user && $user->canManageEvents()): ?>
+                <?php if ($user && $user->canUseCheckin()): ?>
                     <li class="nav-item"><a class="nav-link" href="<?= Url::to(['/checkin/index']) ?>"><i class="bi bi-qr-code-scan"></i> เช็คอิน</a></li>
                 <?php endif ?>
                 <?php if ($user && $user->isOrganizer()): ?>
